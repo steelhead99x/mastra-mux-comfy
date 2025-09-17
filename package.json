@@ -6,10 +6,10 @@
   "scripts": {
     "dev": "tsx watch src/mastra/index.ts",
     "build": "tsc",
-    "test:workflow": "tsx src/scripts/test-video-workflow.ts",
-    "test:agent": "tsx src/scripts/test-agent.ts",
     "test:ollama": "tsx src/scripts/test-ollama.ts",
-    "test:comfy": "tsx src/mastra/workflows/comfy-test.ts",
+    "test:comfy": "tsx src/scripts/comfy-test.ts",
+    "test:mux-mcp": "tsx src/scripts/test-mux.ts",
+    "agent:recent-assets": "tsx src/mastra/agents/agent-recent-assets.ts",
     "start": "node dist/mastra/index.js"
   },
   "dependencies": {

@@ -226,7 +226,7 @@ src/
 │       └── index.ts          # Custom tool definitions
 ├── scripts/
 │   ├── test-workflow.ts      # Workflow testing script
-│   └── test-agent.ts         # Agent testing script
+│   └── test-mux.ts         # Agent testing script
 └── types/
     └── mux.ts                # TypeScript type definitions
 ```
