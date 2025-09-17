@@ -1,0 +1,50 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "inputs": {
+        "video_url": ""
+      }
+    },
+    {
+      "id": 2,
+      "type": "ExtractFrame",
+      "inputs": {
+        "video": [1, 0],
+        "frame_number": 30
+      }
+    },
+    {
+      "id": 3,
+      "type": "StylePrompt",
+      "inputs": {
+        "style": "cinematic",
+        "prompt": "Create an engaging thumbnail"
+      }
+    },
+    {
+      "id": 4,
+      "type": "TextOverlay",
+      "inputs": {
+        "image": [2, 0],
+        "text": "",
+        "font_size": 48,
+        "position": "center"
+      }
+    },
+    {
+      "id": 5,
+      "type": "SaveImage",
+      "inputs": {
+        "images": [4, 0],
+        "filename_prefix": "thumbnail_"
+      }
+    }
+  ],
+  "metadata": {
+    "title": "Video Thumbnail Generator",
+    "description": "AI-powered video thumbnail generation with text overlay",
+    "version": "1.0.0"
+  }
+}

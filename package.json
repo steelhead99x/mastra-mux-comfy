@@ -1,7 +1,7 @@
 {
   "name": "mastra-mux-workflow",
   "version": "1.0.0",
-  "description": "Mastra workflow with Mux MCP integration using local Ollama",
+  "description": "Mastra workflow with Mux MCP and ComfyUI integration using local Ollama",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/mastra/index.ts",
@@ -9,15 +9,15 @@
     "test:workflow": "tsx src/scripts/test-workflow.ts",
     "test:agent": "tsx src/scripts/test-agent.ts",
     "test:ollama": "tsx src/scripts/test-ollama.ts",
+    "test:ai-pipeline": "tsx src/scripts/test-ai-pipeline.ts",
     "start": "node dist/mastra/index.js"
   },
   "dependencies": {
     "@mastra/core": "latest",
-    "@mastra/loggers": "latest",
     "@mastra/mcp": "latest",
-    "dotenv": "^16.3.1",
+    "@mastra/loggers": "latest",
     "ollama": "^0.5.0",
-    "packages": "^0.0.8",
+    "dotenv": "^16.3.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
