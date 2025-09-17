@@ -1,0 +1,26 @@
+{
+  "name": "mastra-mux-workflow",
+  "version": "1.0.0",
+  "description": "Mastra workflow with Mux MCP integration",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/mastra/index.ts",
+    "build": "tsc",
+    "test:workflow": "tsx src/scripts/test-workflow.ts",
+    "test:agent": "tsx src/scripts/test-agent.ts",
+    "start": "node dist/mastra/index.js"
+  },
+  "dependencies": {
+    "@mastra/core": "latest",
+    "@mastra/mcp": "latest",
+    "@mastra/loggers": "latest",
+    "@ai-sdk/openai": "^1.0.0",
+    "dotenv": "^16.3.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
