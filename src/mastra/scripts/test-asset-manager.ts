@@ -1,4 +1,4 @@
-import { MuxAssetManager, createMuxAssetManagerAgent } from "../mastra/agents/mux-asset-manager";
+import { MuxAssetManager, createMuxAssetManagerAgent } from "../agents/mux-asset-manager";
 import dotenv from "dotenv";
 
 dotenv.config();

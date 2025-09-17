@@ -5,7 +5,7 @@ export const muxMcpClient = new MCPClient({
     servers: {
         mux: {
             command: "npx",
-            args: ["-y", "@mux/mcp@latest", "--client=openai-agents", "--tools=dynamic"],
+            args: ["-y", "@mux/mcp@latest", "--tools=dynamic"],
             env: {
                 MUX_TOKEN_ID: process.env.MUX_TOKEN_ID!,
                 MUX_TOKEN_SECRET: process.env.MUX_TOKEN_SECRET!,

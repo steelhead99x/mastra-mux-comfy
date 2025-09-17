@@ -1,4 +1,4 @@
-import { muxMcpClient } from "../mastra/mcp/mux-client";
+import { muxMcpClient } from "../mcp/mux-client";
 import dotenv from "dotenv";
 
 // Load environment variables

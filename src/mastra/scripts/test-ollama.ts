@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { OllamaProvider } from "../mastra/models/ollama-provider";
-import { checkOllamaHealth } from "../mastra/utils/ollama-health";
+import { OllamaProvider } from "../models/ollama-provider";
+import { checkOllamaHealth } from "../utils/ollama-health";
 
 async function testOllamaConnection() {
     console.log("🧪 Testing Ollama Connection");

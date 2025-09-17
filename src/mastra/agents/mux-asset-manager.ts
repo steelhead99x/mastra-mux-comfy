@@ -1,6 +1,7 @@
+
 import { muxMcpClient } from "../mcp/mux-client";
 import { OllamaProvider } from "../models/ollama-provider";
-import { MuxAsset } from "../../types/mux";
+import { MuxAsset } from "../types/mux";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { Agent } from "@mastra/core/agent";
 
@@ -9,6 +10,7 @@ class DirectMuxAssetManager {
     private ollamaProvider: OllamaProvider;
     private tools: Record<string, any> = {};
     private toolsLoaded: boolean = false;
+    private readonly MAX_PROMPT_LENGTH = 4000; // Safe limit for most models
 
     constructor() {
         this.ollamaProvider = new OllamaProvider(
@@ -55,6 +57,26 @@ class DirectMuxAssetManager {
         }
 
         this.toolsLoaded = true;
+    }
+
+    private truncateData(data: any, maxLength: number = 2000): string {
+        const dataString = JSON.stringify(data, null, 2);
+        if (dataString.length <= maxLength) {
+            return dataString;
+        }
+
+        // Try to extract just the essential parts
+        if (data && data.content && Array.isArray(data.content)) {
+            const truncated = {
+                summary: `Found ${data.content.length} items in response`,
+                sample: data.content.slice(0, 2), // Just first 2 items
+                truncated: `... and ${data.content.length - 2} more items`
+            };
+            return JSON.stringify(truncated, null, 2);
+        }
+
+        // Fallback: just truncate the string
+        return dataString.substring(0, maxLength) + '... [truncated]';
     }
 
     private async tryExecuteActualMuxAPI(operation: string, params: any = {}): Promise<any> {
@@ -121,47 +143,52 @@ class DirectMuxAssetManager {
 
         const model = process.env.OLLAMA_MODEL || "gpt-oss:20b";
 
-        // Build context with available tools and real data if available
-        const toolNames = Object.keys(this.tools);
-        const toolsInfo = toolNames.length > 0
-            ? toolNames.slice(0, 10).map(name => `- ${name}`).join('\n')
-            : "- get_api_endpoint_schema\n- list_api_endpoints\n- invoke_api_endpoint";
+        // Build simplified prompt
+        let systemPrompt: string;
 
-        const dataContext = realData ?
-            `\nREAL MUX DATA RETRIEVED:\n${JSON.stringify(realData, null, 2)}\n` :
-            `\nNote: No real Mux data available. This could be due to:
-            1. Invalid or missing Mux API credentials
-            2. MCP server connection issues  
-            3. API endpoint access restrictions
-            
-            Providing simulated example data instead.`;
+        if (realData) {
+            // Truncate the data to keep prompt manageable
+            const truncatedData = this.truncateData(realData, 1500);
 
-        const systemPrompt = `
-You are a Mux Asset Manager with access to the Mux API through MCP tools.
+            systemPrompt = `You are a Mux video asset manager with access to real API data.
 
-Available MCP tools:
-${toolsInfo}
-${dataContext}
-
-You can analyze video assets, provide detailed reports, and manage Mux video collections.
-
-${realData ? 'Use the real Mux data provided above to answer the user\'s request.' : 'Since real data is not available, provide a comprehensive example response showing what the system would return with actual Mux assets.'}
+REAL MUX DATA:
+${truncatedData}
 
 User request: ${prompt}
-        `;
+
+Based on the real data above, provide a helpful and detailed response about the video assets.`;
+
+        } else {
+            systemPrompt = `You are a Mux video asset manager.
+
+User request: ${prompt}
+
+Since no real Mux data is available, provide a comprehensive example response showing what the system would return with actual Mux assets. Include realistic asset IDs, timestamps, durations, and technical details.`;
+        }
+
+        // Check total prompt length
+        if (systemPrompt.length > this.MAX_PROMPT_LENGTH) {
+            console.log(`⚠️  Prompt too long (${systemPrompt.length} chars), using simplified version`);
+            systemPrompt = `You are a helpful Mux video asset manager.
+
+User request: ${prompt}
+
+Please provide a detailed response about video asset management with realistic examples.`;
+        }
 
         try {
             console.log("🤖 Processing with Ollama...");
             const response = await this.ollamaProvider.generate(systemPrompt, model);
             console.log("✅ Ollama response received");
-            
+
             // Log if we're using real vs simulated data
             if (realData) {
-                console.log("🎯 Response based on REAL Mux API data");
+                console.log("🎯 Response based on REAL Mux API data (truncated for model compatibility)");
             } else {
                 console.log("⚠️  Response is SIMULATED - check Mux credentials for real data");
             }
-            
+
             return response;
         } catch (error) {
             console.error("❌ Ollama generation error:", error);
@@ -186,211 +213,76 @@ export class MuxAssetManager {
         filterByStatus?: string;
         filterByDate?: { after?: string; before?: string };
     } = {}) {
-        const prompt = `
-Please list all video assets from my Mux account with the following requirements:
+        const prompt = `List all video assets from my Mux account with these requirements:
 
-${options.limit ? `- Limit results to ${options.limit} assets` : '- Show all available assets'}
-${options.includeDetails ? '- Include full technical details for each asset' : '- Provide summary information'}
-${options.filterByStatus ? `- Only show assets with status: ${options.filterByStatus}` : '- Include assets with all statuses'}
-${options.filterByDate?.after ? `- Only show assets created after: ${options.filterByDate.after}` : ''}
-${options.filterByDate?.before ? `- Only show assets created before: ${options.filterByDate.before}` : ''}
+${options.limit ? `- Limit to ${options.limit} assets` : '- Show all assets'}
+${options.includeDetails ? '- Include full details' : '- Summary info only'}
+${options.filterByStatus ? `- Status: ${options.filterByStatus}` : '- All statuses'}
+${options.filterByDate?.after ? `- After: ${options.filterByDate.after}` : ''}
+${options.filterByDate?.before ? `- Before: ${options.filterByDate.before}` : ''}
 
-For each asset, please provide:
-1. Asset ID and current status
-2. Creation timestamp and last update
-3. Duration and technical specifications
-4. Playback IDs and access policies
-5. Processing errors (if any)
-6. Metadata and custom fields
-
-Please organize the results by status and provide a summary at the end.
-    `;
+For each asset provide: ID, status, created date, duration, resolution, playback IDs, and any errors.`;
 
         return await this.directManager.processWithOllamaAndAPI(prompt, "list_assets");
     }
 
     async searchAssets(query: string) {
-        const prompt = `
-Please search for video assets matching the query: "${query}"
+        const prompt = `Search for video assets matching: "${query}"
 
-Search criteria should include:
-- Asset titles and metadata
-- External IDs and custom fields
-- Asset IDs (partial matches)
-- Creation dates if query contains dates
-- Technical specifications if relevant
-
-For matching assets, provide:
-- Asset ID and title
-- Creation date and status
-- Key technical details
-- Playback information
-- Relevance score/explanation
-
-If no exact matches found, suggest similar assets or alternative search terms.
-
-Use Mux MCP tools to search through all available assets.
-    `;
+Include matches for asset titles, IDs, metadata, dates, and technical specs. 
+Show asset ID, title, creation date, status, duration, and relevance explanation.`;
 
         return await this.directManager.processWithOllamaAndAPI(prompt, "search_assets");
     }
 
     async getRecentAssets(hours: number = 24) {
-        const prompt = `
-Please find and analyze all video assets created in the last ${hours} hours.
+        const prompt = `Find and analyze all video assets created in the last ${hours} hours.
 
-Provide a comprehensive report including:
-
-1. ASSET INVENTORY:
-   - Total count of new assets
-   - Status breakdown (ready, preparing, errored, waiting)
-   - Size and duration statistics
-
-2. DETAILED ASSET LIST:
-   For each asset show:
-   - Asset ID and creation time
-   - Current processing status
-   - Duration and resolution details
-   - Playback URLs (if ready)
-   - Any error messages or issues
-
-3. ANALYSIS & INSIGHTS:
-   - Processing success rate
-   - Average processing time
-   - Common issues or patterns
-   - Recommendations for optimization
-
-4. ACTIONABLE ITEMS:
-   - Assets requiring attention
-   - Failed uploads to investigate
-   - Ready assets for distribution
-
-Please use the available Mux MCP tools to fetch real-time data.
-    `;
+Provide:
+1. Total count and status breakdown (ready, preparing, errored, waiting)
+2. List each asset with: ID, creation time, status, duration, resolution
+3. Processing insights and recommendations
+4. Any issues requiring attention`;
 
         return await this.directManager.processWithOllamaAndAPI(prompt, "list_recent_assets");
     }
 
     async getAssetDetails(assetId: string) {
-        const prompt = `
-Please retrieve comprehensive details for Mux asset ID: ${assetId}
+        const prompt = `Get comprehensive details for Mux asset: ${assetId}
 
-Include all available information:
-- Basic asset properties (ID, status, timestamps)
-- Technical specifications (duration, resolution, codec details)
-- All playback IDs and their policies
-- Track information (video, audio, text tracks)
-- Processing history and any errors
-- Metadata and custom fields
-- Available static renditions
-- Analytics and usage data if available
-
-Also provide:
-- Streaming URLs for different formats
-- Thumbnail and preview URLs
-- Recommendations for optimization
-- Troubleshooting tips if there are issues
-
-Use the appropriate Mux MCP tools to gather this information.
-    `;
+Include: status, timestamps, duration, resolution, codec details, playback IDs, tracks, metadata, errors, and streaming URLs.`;
 
         return await this.directManager.processWithOllamaAndAPI(prompt, "get_asset_details");
     }
 
     async getAssetsByStatus(status: 'ready' | 'preparing' | 'errored' | 'waiting') {
-        const prompt = `
-Please find all video assets with status "${status}" in my Mux account.
+        const prompt = `Find all video assets with status "${status}".
 
-Provide detailed analysis:
-
-1. ASSET COUNT & OVERVIEW:
-   - Total number of ${status} assets
-   - Percentage of total asset collection
-   - Creation date range for these assets
-
-2. DETAILED LISTING:
-   For each ${status} asset:
-   - Asset ID and creation time
-   - Duration and technical specs
-   - ${status === 'errored' ? 'Error details and potential solutions' : ''}
-   - ${status === 'ready' ? 'Playback URLs and distribution info' : ''}
-   - ${status === 'preparing' ? 'Estimated completion time' : ''}
-
-3. RECOMMENDATIONS:
-   - ${status === 'errored' ? 'Steps to resolve errors' : ''}
-   - ${status === 'ready' ? 'Optimization opportunities' : ''}
-   - Best practices for future uploads
-
-Use Mux MCP tools to fetch current data from the API.
-    `;
+Show:
+1. Total count and percentage of collection
+2. Each asset: ID, creation time, duration, technical specs
+${status === 'errored' ? '3. Error details and solutions' : ''}
+${status === 'ready' ? '3. Playback URLs and distribution info' : ''}
+4. Recommendations and next steps`;
 
         return await this.directManager.processWithOllamaAndAPI(prompt, "list_assets_by_status");
     }
 
     async getAssetsByDateRange(startDate: string, endDate: string) {
-        const prompt = `
-Please retrieve all video assets created between ${startDate} and ${endDate}.
+        const prompt = `Retrieve all video assets created between ${startDate} and ${endDate}.
 
-For each asset found, provide:
-- Complete asset information
-- Processing timeline and current status
-- Playback configuration and URLs
-- Any issues or recommendations
-
-Group the results by day and provide analytics:
-- Total assets created per day
-- Status distribution
-- Average processing time
-- Common patterns or issues
-
-Include actionable insights about the asset collection.
-    `;
+Group by day with analytics: daily counts, status distribution, average processing time, common patterns.`;
 
         return await this.directManager.processWithOllamaAndAPI(prompt, "list_assets_by_date");
     }
 
     async generateAssetReport() {
-        const prompt = `
-Please generate a comprehensive report about all video assets in my Mux account.
+        const prompt = `Generate comprehensive report about all video assets:
 
-REPORT SECTIONS:
-
-1. EXECUTIVE SUMMARY:
-   - Total asset count
-   - Storage usage overview
-   - Processing success rate
-   - Overall account health
-
-2. ASSET DISTRIBUTION:
-   - Assets by status (ready, preparing, errored, waiting)
-   - Assets by creation date (last 7 days, 30 days, older)
-   - Assets by duration (short <1min, medium 1-10min, long >10min)
-   - Assets by resolution tiers
-
-3. PERFORMANCE METRICS:
-   - Average processing time
-   - Success/failure rates
-   - Most common error types
-   - Delivery performance stats
-
-4. CONTENT ANALYSIS:
-   - Most popular content (by views if available)
-   - Content with issues needing attention
-   - Unused or underutilized assets
-
-5. RECOMMENDATIONS:
-   - Account optimization opportunities
-   - Content management best practices
-   - Cost optimization suggestions
-   - Technical improvements needed
-
-6. ACTION ITEMS:
-   - Immediate issues to resolve
-   - Assets to review or update
-   - Workflow improvements to implement
-
-Use all available Mux MCP tools to gather comprehensive data for this report.
-    `;
+1. Executive summary: total count, storage usage, success rate
+2. Asset distribution: by status, date, duration, resolution
+3. Performance metrics: processing times, success/failure rates
+4. Recommendations and action items`;
 
         return await this.directManager.processWithOllamaAndAPI(prompt, "generate_asset_report");
     }

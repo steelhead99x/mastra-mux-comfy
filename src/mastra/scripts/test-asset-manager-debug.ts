@@ -1,0 +1,349 @@
+
+import { MuxAssetManager } from "../agents/mux-asset-manager";
+import dotenv from "dotenv";
+import readline from "readline";
+
+dotenv.config();
+
+// Add debug flag
+let DEBUG = process.env.DEBUG === 'true' || process.argv.includes('--debug');
+
+function debugLog(label: string, data: any) {
+    if (DEBUG) {
+        console.log(`\n🔧 DEBUG - ${label}:`);
+        console.log('─'.repeat(40));
+        if (typeof data === 'object' && data !== null) {
+            console.log(JSON.stringify(data, null, 2));
+        } else {
+            console.log(data);
+        }
+        console.log('─'.repeat(40));
+    }
+}
+
+async function interactiveTest() {
+    console.log("🎬 Interactive Mux Asset Manager");
+    console.log("===============================");
+
+    // Debug: Test Ollama connection first
+    if (DEBUG) {
+        console.log("🔧 Testing Ollama connection...");
+        try {
+            const { OllamaProvider } = await import("../models/ollama-provider");
+            const ollama = new OllamaProvider(process.env.OLLAMA_BASE_URL);
+
+            debugLog("Ollama config", {
+                baseUrl: process.env.OLLAMA_BASE_URL,
+                model: process.env.OLLAMA_MODEL
+            });
+
+            // Test basic health
+            const health = await ollama.checkHealth();
+            debugLog("Ollama health check", health);
+
+            // Test available models
+            const models = await ollama.listModels();
+            debugLog("Available models", models.map(m => m.name));
+
+            // Test basic generation
+            console.log("🧪 Testing basic Ollama generation...");
+            const testResponse = await ollama.generate(
+                "Say 'Hello, I am working!' in exactly those words.",
+                process.env.OLLAMA_MODEL || "gpt-oss:20b"
+            );
+            debugLog("Basic Ollama test", testResponse);
+
+            if (!testResponse.text || testResponse.text.trim() === '') {
+                console.log("⚠️  Ollama is returning empty responses - this is the root issue!");
+            }
+
+        } catch (error) {
+            console.log("❌ Ollama test failed:", error);
+            debugLog("Ollama error details", error);
+        }
+    }
+
+    // Debug: Test agent initialization
+    debugLog("Initializing MuxAssetManager", "Starting...");
+    let assetManager;
+    try {
+        assetManager = new MuxAssetManager();
+        debugLog("MuxAssetManager initialized", "Success");
+    } catch (error) {
+        debugLog("MuxAssetManager initialization failed", error);
+        console.error("❌ Failed to initialize asset manager:", error);
+        return;
+    }
+
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    if (DEBUG) {
+        console.log("🔧 DEBUG MODE ENABLED - Raw tool outputs will be shown");
+    }
+    console.log("Available commands:");
+    console.log("1. recent - Get recent assets");
+    console.log("2. list - List all assets");
+    console.log("3. search <query> - Search assets");
+    console.log("4. report - Generate asset report");
+    console.log("5. status <status> - Get assets by status");
+    console.log("6. debug - Toggle debug mode");
+    console.log("7. test - Test agent directly");
+    console.log("8. ollama - Test Ollama directly");
+    console.log("9. exit - Exit\n");
+
+    const askQuestion = (question: string): Promise<string> => {
+        return new Promise((resolve) => {
+            rl.question(question, resolve);
+        });
+    };
+
+    while (true) {
+        try {
+            const input = await askQuestion("Enter command: ");
+            const [command, ...args] = input.trim().split(' ');
+
+            switch (command.toLowerCase()) {
+                case 'ollama':
+                    console.log("\n🧪 Testing Ollama directly...");
+                    try {
+                        const { OllamaProvider } = await import("../models/ollama-provider");
+                        const ollama = new OllamaProvider(process.env.OLLAMA_BASE_URL);
+
+                        // Test with a simple prompt
+                        console.log("Testing simple prompt...");
+                        const simpleTest = await ollama.generate(
+                            "Count from 1 to 3. Just write: 1, 2, 3",
+                            process.env.OLLAMA_MODEL || "gpt-oss:20b"
+                        );
+                        debugLog("Simple counting test", simpleTest);
+
+                        // Test with a more complex prompt
+                        console.log("Testing complex prompt...");
+                        const complexTest = await ollama.generate(
+                            "You are a helpful assistant. Please analyze this request: List video assets from a media library. Respond with a clear action plan.",
+                            process.env.OLLAMA_MODEL || "gpt-oss:20b"
+                        );
+                        debugLog("Complex prompt test", complexTest);
+
+                        // Test chat format
+                        console.log("Testing chat format...");
+                        const chatTest = await ollama.chat([
+                            { role: "system", content: "You are a helpful assistant." },
+                            { role: "user", content: "Say hello in one sentence." }
+                        ], process.env.OLLAMA_MODEL || "gpt-oss:20b");
+                        debugLog("Chat format test", chatTest);
+
+                        // Test if model is actually loaded
+                        console.log("Checking if model is loaded...");
+                        try {
+                            const { Ollama } = await import("ollama");
+                            const client = new Ollama({ host: process.env.OLLAMA_BASE_URL });
+                            const showResult = await client.show({ model: process.env.OLLAMA_MODEL || "gpt-oss:20b" });
+                            debugLog("Model info", {
+                                modelfile: showResult.modelfile?.substring(0, 200) + "...",
+                                parameters: showResult.parameters,
+                                template: showResult.template
+                            });
+                        } catch (showError) {
+                            console.log("⚠️  Could not get model info:", showError.message);
+                            // Try to list available models
+                            try {
+                                const { Ollama } = await import("ollama");
+                                const client = new Ollama({ host: process.env.OLLAMA_BASE_URL });
+                                const listResult = await client.list();
+                                console.log("Available models:", listResult.models.map(m => m.name));
+                            } catch (listError) {
+                                console.log("❌ Could not list models:", listError.message);
+                            }
+                        }
+
+                    } catch (error) {
+                        console.error("❌ Direct Ollama test failed:", error);
+                        debugLog("Direct Ollama error", error);
+                    }
+                    break;
+
+                case 'recent':
+                    console.log("\n🔍 Getting recent assets...");
+                    debugLog("Calling getRecentAssets()", "Starting method call");
+
+                    const startTime = Date.now();
+                    const recent = await assetManager.getRecentAssets();
+                    const endTime = Date.now();
+
+                    debugLog("Method execution time", `${endTime - startTime}ms`);
+                    debugLog("Raw Response Object", recent);
+
+                    // Debug: Show individual properties with more detail
+                    if (DEBUG) {
+                        console.log("\n🔧 DEBUG - Response Analysis:");
+                        console.log(`- Type: ${typeof recent}`);
+                        console.log(`- Constructor: ${recent?.constructor?.name || 'N/A'}`);
+                        console.log(`- Keys: ${Object.keys(recent || {}).join(', ')}`);
+                        console.log(`- text: "${recent.text}" (type: ${typeof recent.text}, length: ${recent.text?.length || 0})`);
+                        console.log(`- toolCalls: ${recent.toolCalls?.length || 0} calls (type: ${typeof recent.toolCalls})`);
+                        console.log(`- toolResults: ${recent.toolResults?.length || 0} results (type: ${typeof recent.toolResults})`);
+                        console.log(`- finishReason: "${recent.finishReason}"`);
+                        console.log(`- usage: ${JSON.stringify(recent.usage)}`);
+
+                        if (recent.toolCalls && recent.toolCalls.length > 0) {
+                            console.log("\n🔧 DEBUG - Tool Calls:");
+                            recent.toolCalls.forEach((call, index) => {
+                                console.log(`\nCall ${index + 1}:`);
+                                debugLog(`Tool Call ${index + 1}`, call);
+                            });
+                        }
+
+                        if (recent.toolResults && recent.toolResults.length > 0) {
+                            console.log("\n🔧 DEBUG - Tool Results:");
+                            recent.toolResults.forEach((result, index) => {
+                                console.log(`\nTool ${index + 1}:`);
+                                console.log(`- toolName: ${result.toolName}`);
+                                console.log(`- args: ${JSON.stringify(result.args, null, 2)}`);
+                                console.log(`- result type: ${typeof result.result}`);
+                                if (typeof result.result === 'string') {
+                                    console.log(`- result preview: "${result.result.substring(0, 200)}${result.result.length > 200 ? '...' : ''}"`);
+                                } else {
+                                    debugLog(`Tool Result ${index + 1}`, result.result);
+                                }
+                            });
+                        }
+                    }
+
+                    console.log("\n📋 Response:");
+                    if (recent.text) {
+                        console.log(recent.text);
+                    } else {
+                        console.log("⚠️  Empty response received");
+                    }
+                    break;
+
+                case 'list':
+                    console.log("\n🔍 Listing all assets...");
+                    debugLog("Calling listAllAssets()", { limit: 5 });
+
+                    const all = await assetManager.listAllAssets({ limit: 5 });
+                    debugLog("Raw Response Object", all);
+
+                    console.log("\n📋 Response:");
+                    console.log(all.text || "⚠️  Empty response received");
+                    break;
+
+                case 'search':
+                    if (args.length === 0) {
+                        console.log("❌ Please provide a search query");
+                        break;
+                    }
+                    const query = args.join(' ');
+                    console.log(`\n🔍 Searching for: ${query}`);
+                    debugLog("Calling searchAssets()", { query });
+
+                    const search = await assetManager.searchAssets(query);
+                    debugLog("Raw Response Object", search);
+
+                    console.log("\n📋 Response:");
+                    console.log(search.text || "⚠️  Empty response received");
+                    break;
+
+                case 'report':
+                    console.log("\n🔍 Generating asset report...");
+                    debugLog("Calling generateAssetReport()", "Starting method call");
+
+                    const report = await assetManager.generateAssetReport();
+                    debugLog("Raw Response Object", report);
+
+                    console.log("\n📋 Response:");
+                    console.log(report.text || "⚠️  Empty response received");
+                    break;
+
+                case 'status':
+                    if (args.length === 0 || !['ready', 'preparing', 'errored', 'waiting'].includes(args[0])) {
+                        console.log("❌ Please provide a valid status: ready, preparing, errored, waiting");
+                        break;
+                    }
+                    console.log(`\n🔍 Getting ${args[0]} assets...`);
+                    debugLog("Calling getAssetsByStatus()", { status: args[0] });
+
+                    const status = await assetManager.getAssetsByStatus(args[0] as any);
+                    debugLog("Raw Response Object", status);
+
+                    console.log("\n📋 Response:");
+                    console.log(status.text || "⚠️  Empty response received");
+                    break;
+
+                case 'test':
+                    console.log("\n🧪 Testing agent directly...");
+
+                    // Test if the agent has tools available
+                    debugLog("Agent object", {
+                        type: typeof assetManager,
+                        constructor: assetManager.constructor.name,
+                        methods: Object.getOwnPropertyNames(Object.getPrototypeOf(assetManager))
+                    });
+
+                    // Try to access agent internals if possible
+                    try {
+                        const agentKeys = Object.keys(assetManager);
+                        debugLog("Agent instance keys", agentKeys);
+
+                        // Check if there's an underlying agent or client
+                        if ((assetManager as any).agent) {
+                            debugLog("Underlying agent", typeof (assetManager as any).agent);
+                        }
+                        if ((assetManager as any).client) {
+                            debugLog("Underlying client", typeof (assetManager as any).client);
+                        }
+                        if ((assetManager as any).directManager) {
+                            debugLog("Direct manager", typeof (assetManager as any).directManager);
+                        }
+                    } catch (error) {
+                        debugLog("Failed to inspect agent internals", error);
+                    }
+                    break;
+
+                case 'debug':
+                    DEBUG = !DEBUG;
+                    console.log(`🔧 Debug mode ${DEBUG ? 'enabled' : 'disabled'}`);
+                    break;
+
+                case 'exit':
+                    console.log("👋 Goodbye!");
+                    rl.close();
+                    process.exit(0);
+                    break;
+
+                default:
+                    console.log("❌ Unknown command. Try: recent, list, search, report, status, debug, test, ollama, exit");
+                    break;
+            }
+
+            console.log("\n" + "─".repeat(50) + "\n");
+        } catch (error) {
+            console.error("❌ Error:", error);
+
+            // Debug: Show full error details
+            if (DEBUG) {
+                console.log("\n🔧 DEBUG - Error Details:");
+                console.log(`- Error type: ${error?.constructor?.name || 'Unknown'}`);
+                console.log(`- Error message: ${error?.message || 'No message'}`);
+                if (error instanceof Error && error.stack) {
+                    console.log(`- Stack trace:`);
+                    console.log(error.stack);
+                }
+                debugLog("Full Error Object", error);
+            }
+        }
+    }
+}
+
+if (require.main === module) {
+    interactiveTest().catch((error) => {
+        console.error("❌ Fatal error:", error);
+        if (DEBUG) {
+            debugLog("Fatal Error Details", error);
+        }
+    });
+}

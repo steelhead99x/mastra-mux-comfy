@@ -9,13 +9,13 @@
     "dev:server": "tsx src/mastra/index.ts",
     "build": "tsc",
     "start": "node dist/mastra/index.js",
-    "assets": "tsx src/scripts/asset-cli.ts",
-    "test:mux-mcp": "tsx src/scripts/test-mux.ts",
-    "test:asset-manager": "tsx src/scripts/test-asset-manager.ts",
-    "test:ollama": "tsx src/scripts/test-ollama.ts",
-    "test:comfy": "tsx src/scripts/comfy-test.ts",
-    "mux:interactive": "tsx src/scripts/test-asset-manager-debug.ts"
-
+    "assets": "tsx src/mastra/scripts/asset-cli.ts",
+    "test:mux-mcp": "tsx src/mastra/scripts/test-mux.ts",
+    "test:asset-manager": "tsx src/mastra/scripts/test-asset-manager.ts",
+    "test:ollama": "tsx src/mastra/scripts/test-ollama.ts",
+    "test:comfy": "tsx src/mastra/scripts/comfy-test.ts",
+    "mux:interactive": "tsx src/mastra/scripts/test-asset-manager-debug.ts",
+    "mux:interactive:debug": "DEBUG=true tsx src/mastra/scripts/test-asset-manager-debug.ts"
   },
   "dependencies": {
     "@mastra/core": "latest",
