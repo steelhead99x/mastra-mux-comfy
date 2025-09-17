@@ -9,15 +9,17 @@
     "test:workflow": "tsx src/scripts/test-video-workflow.ts",
     "test:agent": "tsx src/scripts/test-agent.ts",
     "test:ollama": "tsx src/scripts/test-ollama.ts",
-    "test:ai-pipeline": "tsx src/scripts/test-ai-pipeline.ts",
+    "test:comfy": "tsx src/mastra/workflows/ai-video-pipeline.ts",
     "start": "node dist/mastra/index.js"
   },
   "dependencies": {
     "@mastra/core": "latest",
-    "@mastra/mcp": "latest",
     "@mastra/loggers": "latest",
-    "ollama": "^0.5.0",
+    "@mastra/mcp": "latest",
+    "@stable-canvas/comfyui-client": "^1.4.4",
     "dotenv": "^16.3.1",
+    "ollama": "^0.5.0",
+    "package": "^1.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
