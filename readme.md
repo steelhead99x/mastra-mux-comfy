@@ -1,12 +1,13 @@
 # Mastra Mux Asset Manager
 
-AI-powered video asset management system with local LLM processing and Mux API integration.
+AI-powered video asset management system with local LLM processing, Mux API integration, and ComfyUI workflow support.
 
 ## What it does
 
 🎬 **Intelligent Video Asset Management** - Chat with your Mux video library using natural language  
 🤖 **Local AI Processing** - Uses Ollama for private, offline AI analysis  
 🔧 **Real-time Mux Integration** - Direct access to Mux API through Model Context Protocol (MCP)  
+🎨 **ComfyUI Integration** - AI-powered video processing workflows  
 📊 **Smart Analytics** - Comprehensive reports and insights about your video assets
 
 ## Quick Start
@@ -14,6 +15,7 @@ AI-powered video asset management system with local LLM processing and Mux API i
 ### 1. Prerequisites
 - Node.js 18+
 - [Ollama](https://ollama.ai) with a model (e.g., `ollama pull llama3.1:8b`)
+- [ComfyUI](https://github.com/comfyanonymous/ComfyUI) (optional - for video processing)
 - Mux account (optional - works without credentials)
 
 ### 2. Setup
@@ -35,6 +37,9 @@ npm run test:ollama
 
 # Test the AI agent
 npm run test:asset-manager
+
+# Test ComfyUI connection (optional)
+npm run test:comfy
 ```
 
 
@@ -45,12 +50,13 @@ npm run test:asset-manager
 npm run test:ollama          # Test Ollama connection
 npm run test:asset-manager   # Test AI asset analysis
 npm run test:mux-mcp         # Test Mux API (needs credentials)
+npm run test:comfy           # Test ComfyUI connection
 ```
 
 
 ### 🎯 Interactive Asset Manager
 ```shell script
-npm run interactive          # Interactive chat with your video assets
+npm run mux:interactive      # Interactive chat with your video assets
 ```
 
 
@@ -77,6 +83,12 @@ Ask questions like:
 - "Generate a report of failed uploads"
 - "Find videos longer than 10 minutes"
 
+### 🎨 Video Processing with ComfyUI
+- AI-powered video thumbnail generation
+- Custom video processing workflows
+- Automated video enhancement
+- Integration with Mux video pipeline
+
 ### 📊 Smart Reports
 - Asset inventory and status breakdown
 - Processing success rates
@@ -88,6 +100,7 @@ Ask questions like:
 - **Mastra Framework**: Modern AI agent architecture
 - **Ollama Local LLM**: Private AI processing
 - **Mux MCP**: Direct API integration via Model Context Protocol
+- **ComfyUI**: AI video processing workflows
 - **TypeScript**: Full type safety
 
 ## Configuration
@@ -101,6 +114,9 @@ OLLAMA_MODEL=llama3.1:8b
 # Mux (optional - for real data)
 MUX_TOKEN_ID=your_token_id
 MUX_TOKEN_SECRET=your_token_secret
+
+# ComfyUI (optional - for video processing)
+COMFYUI_BASE_URL=http://127.0.0.1:8000
 ```
 
 
@@ -115,10 +131,16 @@ src/
 ├── mastra/
 │   ├── agents/mux-asset-manager.ts    # Main AI agent
 │   ├── models/ollama-provider.ts      # Ollama integration
-│   └── mcp/mux-client.ts             # Mux API client
+│   ├── mcp/
+│   │   ├── mux-client.ts             # Mux API client
+│   │   └── comfyui-client.ts         # ComfyUI integration
+│   └── tools/comfy-video-tools.ts    # Video processing tools
 ├── scripts/
 │   ├── test-asset-manager.ts         # Agent testing
-│   └── test-asset-manager-debug.ts   # Interactive mode
+│   ├── test-asset-manager-debug.ts   # Interactive mode
+│   └── comfy-test.ts                 # ComfyUI testing
+├── workflows/
+│   └── thumbnail-generator.json      # ComfyUI workflow
 └── types/mux.ts                      # TypeScript definitions
 ```
 
@@ -128,7 +150,8 @@ src/
 1. **AI Agent**: Processes natural language requests about video assets
 2. **MCP Integration**: Dynamically loads Mux API tools for real-time data
 3. **Local LLM**: Uses Ollama for private AI analysis without cloud dependencies
-4. **Smart Responses**: Combines real Mux data with AI-generated insights
+4. **ComfyUI Integration**: Processes videos using AI workflows
+5. **Smart Responses**: Combines real Mux data with AI-generated insights
 
 ## Troubleshooting
 
@@ -142,6 +165,16 @@ ollama list
 
 # Pull a model if needed
 ollama pull llama3.1:8b
+```
+
+
+### ComfyUI Issues
+```shell script
+# Start ComfyUI server
+python main.py --listen
+
+# Check if running on correct port
+curl http://127.0.0.1:8000/queue
 ```
 
 
@@ -181,6 +214,36 @@ DETAILED ASSET LIST:
 ```
 
 
+## ComfyUI Integration
+
+### Test ComfyUI Connection
+```shell script
+npm run test:comfy
+```
+
+
+Expected output:
+```
+🚀 Testing ComfyUI Connection...
+
+1️⃣ Testing if ComfyUI server is running...
+✅ ComfyUI server is running!
+
+2️⃣ Getting available nodes...
+✅ Found 847 node types
+
+3️⃣ Getting system information...
+✅ System stats: {...}
+
+🎉 Connection test successful! ComfyUI is ready to use.
+```
+
+
+### Available Video Workflows
+- **Thumbnail Generation**: Creates video thumbnails using AI
+- **Video Enhancement**: Improves video quality
+- **Custom Processing**: User-defined video workflows
+
 ## Contributing
 
 This is a demonstration project showing:
@@ -188,6 +251,7 @@ This is a demonstration project showing:
 - Ollama local LLM integration
 - MCP protocol implementation
 - AI-powered video asset management
+- ComfyUI workflow integration
 
 Feel free to extend it for your specific use cases!
 

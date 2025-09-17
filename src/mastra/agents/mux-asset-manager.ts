@@ -128,11 +128,16 @@ class DirectMuxAssetManager {
             : "- get_api_endpoint_schema\n- list_api_endpoints\n- invoke_api_endpoint";
 
         const dataContext = realData ?
-            `\nREAL MUX DATA AVAILABLE:\n${JSON.stringify(realData, null, 2)}\n` :
-            `\nNote: Real Mux data not available, provide realistic example.`;
+            `\nREAL MUX DATA RETRIEVED:\n${JSON.stringify(realData, null, 2)}\n` :
+            `\nNote: No real Mux data available. This could be due to:
+            1. Invalid or missing Mux API credentials
+            2. MCP server connection issues  
+            3. API endpoint access restrictions
+            
+            Providing simulated example data instead.`;
 
         const systemPrompt = `
-You are a Mux Asset Manager with access to the complete Mux API through MCP tools.
+You are a Mux Asset Manager with access to the Mux API through MCP tools.
 
 Available MCP tools:
 ${toolsInfo}
@@ -149,11 +154,19 @@ User request: ${prompt}
             console.log("🤖 Processing with Ollama...");
             const response = await this.ollamaProvider.generate(systemPrompt, model);
             console.log("✅ Ollama response received");
+            
+            // Log if we're using real vs simulated data
+            if (realData) {
+                console.log("🎯 Response based on REAL Mux API data");
+            } else {
+                console.log("⚠️  Response is SIMULATED - check Mux credentials for real data");
+            }
+            
             return response;
         } catch (error) {
             console.error("❌ Ollama generation error:", error);
             return {
-                text: `❌ Error processing request: ${error.message}\n\nNote: Unable to connect to Ollama server at ${process.env.OLLAMA_BASE_URL}. Please check:\n1. Ollama is running\n2. Model '${model}' is available\n3. Network connectivity`
+                text: `❌ Error processing request: ${error.message}\n\nNote: Unable to connect to Ollama server. Please check:\n1. Ollama is running\n2. Model is available\n3. Network connectivity`
             };
         }
     }
