@@ -9,7 +9,9 @@
     "test:ollama": "tsx src/scripts/test-ollama.ts",
     "test:comfy": "tsx src/scripts/comfy-test.ts",
     "test:mux-mcp": "tsx src/scripts/test-mux.ts",
-    "agent:recent-assets": "tsx src/mastra/agents/agent-recent-assets.ts",
+    "test:asset-manager": "tsx src/scripts/test-asset-manager.ts",
+    "assets": "tsx src/scripts/asset-cli.ts",
+    "agent:recent-assets": "tsx src/mastra/agents/mux-asset-manager.ts",
     "start": "node dist/mastra/index.js"
   },
   "dependencies": {

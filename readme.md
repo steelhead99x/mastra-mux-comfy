@@ -11,12 +11,13 @@ A comprehensive video processing solution built with Mastra and Mux MCP (Model C
 - 🎯 **Multiple Formats**: HLS, DASH, and MP4 support
 - 📝 **Subtitle Generation**: Automatic speech recognition
 - 🧪 **Test Mode**: Free development testing with watermarks
+- 💼 **Asset Management CLI**: Command-line interface for managing Mux assets
 
 ## Prerequisites
 
 - Node.js 18+
 - Mux account with API credentials
-- OpenAI API key (for agent functionality)
+- Ollama with local LLM model (e.g., gpt-oss:20b)
 
 ## Installation
 
@@ -29,9 +30,8 @@ cd mastra-mux-workflow
 npm install
 
 # Set up environment variables
-cp .env.example .env
+cp sample.env .env
 ```
-
 
 ## Configuration
 
@@ -46,13 +46,13 @@ MUX_SIGNING_KEY=your_signing_key
 MUX_PRIVATE_KEY=your_private_key
 MUX_AUTHORIZATION_TOKEN=your_auth_token
 
-# OpenAI Configuration (for AI agent)
-OPENAI_API_KEY=your_openai_api_key
+# Ollama Configuration
+OLLAMA_BASE_URL=http://192.168.88.16:11434
+OLLAMA_MODEL=gpt-oss:20b
 
 # Server Configuration (optional)
 PORT=4111
 ```
-
 
 ## Quick Start
 
@@ -62,26 +62,91 @@ PORT=4111
 npm run dev
 ```
 
-
 The Mastra playground will be available at http://localhost:4111
 
-### 2. Test the Video Processing Workflow
+### 2. Use the Mux Asset Manager CLI
 
 ```shell script
-npm run test:workflow
+# List all assets
+npm run assets list
+
+# Get recent assets (last 24 hours)
+npm run assets recent
+
+# Get assets by status
+npm run assets status ready
+
+# Generate comprehensive report
+npm run assets report
+
+# Search for specific assets
+npm run assets search "my video"
+
+# Get detailed asset information
+npm run assets details abc123...
 ```
 
-
-This will process a sample video and show the complete pipeline in action.
-
-### 3. Test the AI Agent
+### 3. Test the System Components
 
 ```shell script
-npm run test:agent
+# Test Mux MCP connection
+npm run test:mux-mcp
+
+# Test asset manager agent
+npm run test:asset-manager
+
+# Test Ollama connection
+npm run test:ollama
 ```
 
+## 🎬 Mux Asset Manager CLI
 
-This demonstrates the AI agent's ability to handle video processing requests using natural language.
+The CLI provides powerful commands for managing your Mux video assets:
+
+### Available Commands
+
+- `list [--detailed] [--limit N]` - List all assets
+- `recent [hours]` - Get recent assets (default 24h)
+- `status <ready|preparing|errored|waiting>` - Get assets by status
+- `details <asset-id>` - Get detailed asset info
+- `search <query>` - Search assets
+- `report` - Generate comprehensive report
+- `date <start> <end>` - Get assets by date range
+- `help` - Show help
+
+### CLI Examples
+
+```shell script
+# List recent assets from last 48 hours
+npm run assets recent 48
+
+# Find all ready assets
+npm run assets status ready
+
+# Get details for specific asset
+npm run assets details abc123def456
+
+# Search for assets
+npm run assets search 'my video title'
+
+# Get assets from date range
+npm run assets date 2024-01-01 2024-01-31
+
+# Generate detailed report
+npm run assets report
+
+# List assets with full details
+npm run assets list --detailed --limit 10
+```
+
+### CLI Features
+
+🔍 **Smart Filtering**: Filter by status, date, or custom criteria  
+📊 **Detailed Analytics**: Processing success rates, duration stats, error analysis  
+🎯 **Asset Discovery**: Search by title, ID, metadata, or technical specs  
+📋 **Comprehensive Reports**: Executive summaries with actionable insights  
+⚡ **Real-time Data**: Direct integration with Mux API via MCP  
+🛠️ **Troubleshooting**: Identify problematic assets and get solutions
 
 ## Usage
 
@@ -105,7 +170,6 @@ The workflow accepts a video URL and processes it through these stages:
 }
 ```
 
-
 **Example Output:**
 ```json
 {
@@ -117,7 +181,6 @@ The workflow accepts a video URL and processes it through these stages:
   "thumbnailUrl": "https://image.mux.com/xyz789/thumbnail.jpg"
 }
 ```
-
 
 ### AI Agent Integration
 
@@ -153,15 +216,46 @@ npm run dev          # Start development server with hot reload
 npm run build        # Build for production
 npm start           # Start production server
 
-# Testing
-npm run test:workflow  # Test the video processing workflow
-npm run test:agent     # Test the AI agent functionality
+# Asset Management
+npm run assets       # Asset Manager CLI - see commands above
 
-# Utilities
-npm run type-check    # Run TypeScript type checking
-npm run lint          # Run code linting
+# Testing
+npm run test:mux-mcp        # Test Mux MCP connection
+npm run test:asset-manager  # Test asset manager agent
+npm run test:ollama         # Test Ollama connection
+npm run test:comfy          # Test ComfyUI integration
+
+# Agent Interaction
+npm run agent:recent-assets # Get recent assets using agent
 ```
 
+## Asset Management Features
+
+### 📊 Comprehensive Asset Reports
+
+Generate detailed reports including:
+- **Executive Summary**: Total assets, storage usage, success rates
+- **Asset Distribution**: By status, date, duration, resolution
+- **Performance Metrics**: Processing times, error rates, delivery stats
+- **Content Analysis**: Popular content, problematic assets
+- **Recommendations**: Optimization opportunities, best practices
+- **Action Items**: Immediate issues to resolve
+
+### 🔍 Smart Asset Discovery
+
+- **Status Filtering**: Find ready, preparing, errored, or waiting assets
+- **Date Range Queries**: Assets created within specific timeframes
+- **Metadata Search**: Search by title, external ID, or custom fields
+- **Technical Specs**: Filter by resolution, duration, codec details
+- **Playback Analysis**: Review streaming configurations and policies
+
+### 🛠️ Troubleshooting & Optimization
+
+- **Error Detection**: Identify failed uploads and processing issues
+- **Performance Analysis**: Track processing times and success rates
+- **Usage Insights**: Understand content consumption patterns
+- **Cost Optimization**: Identify unused or underutilized assets
+- **Best Practices**: Receive recommendations for workflow improvements
 
 ## Configuration Options
 
@@ -221,16 +315,18 @@ src/
 │   ├── workflows/
 │   │   └── video-processing.ts # Video workflow definition
 │   ├── agents/
-│   │   └── video-agent.ts    # AI agent configuration
+│   │   ├── video-agent.ts    # AI agent configuration
+│   │   └── mux-asset-manager.ts # Asset management agent
 │   └── tools/
 │       └── index.ts          # Custom tool definitions
 ├── scripts/
-│   ├── test-workflow.ts      # Workflow testing script
-│   └── test-mux.ts         # Agent testing script
+│   ├── asset-cli.ts          # Asset Manager CLI
+│   ├── test-asset-manager.ts # Asset manager testing
+│   ├── test-mux.ts           # MCP connection testing
+│   └── test-ollama.ts        # Ollama connection testing
 └── types/
     └── mux.ts                # TypeScript type definitions
 ```
-
 
 ### Adding Custom Tools
 
@@ -255,28 +351,23 @@ export const customVideoTool = createTool({
 });
 ```
 
+### Extending the Asset Manager
 
-### Extending the Workflow
-
-Add new steps to the workflow:
+The `MuxAssetManager` class can be extended with new methods:
 
 ```typescript
-const newStep = createStep({
-  id: "new-step",
-  description: "New processing step",
-  inputSchema: z.object({...}),
-  outputSchema: z.object({...}),
-  execute: async ({ context }) => {
-    // Step implementation
+import { MuxAssetManager } from "./src/mastra/agents/mux-asset-manager";
+
+class ExtendedAssetManager extends MuxAssetManager {
+  async getAssetsByResolution(resolution: string) {
+    // Custom implementation
   }
-});
-
-export const extendedWorkflow = createWorkflow({...})
-  .then(existingStep)
-  .then(newStep)
-  .commit();
+  
+  async analyzeAssetPerformance() {
+    // Custom analytics
+  }
+}
 ```
-
 
 ## Monitoring and Observability
 
@@ -294,6 +385,13 @@ export const extendedWorkflow = createWorkflow({...})
 - Conversation flow analysis
 - Error pattern detection
 
+### Asset Analytics
+
+- Processing success rates
+- Average encoding times
+- Storage utilization metrics
+- Playback performance data
+
 ## Deployment
 
 ### Production Build
@@ -302,7 +400,6 @@ export const extendedWorkflow = createWorkflow({...})
 npm run build
 npm start
 ```
-
 
 ### Environment Variables for Production
 
@@ -313,7 +410,6 @@ MUX_TOKEN_ID=prod_token_id
 MUX_TOKEN_SECRET=prod_secret
 # ... other production credentials
 ```
-
 
 ### Docker Deployment
 
@@ -327,7 +423,6 @@ EXPOSE 4111
 CMD ["npm", "start"]
 ```
 
-
 ## Troubleshooting
 
 ### Common Issues
@@ -337,13 +432,18 @@ CMD ["npm", "start"]
 - Check network connectivity
 - Ensure `@mux/mcp` package is properly installed
 
+**Asset Manager CLI Issues**
+- Run `npm run test:mux-mcp` to verify MCP connection
+- Check Ollama server is running and accessible
+- Verify all environment variables are set
+
 **Workflow Timeout**
 - Increase `maxPollingAttempts` parameter
 - Check video file size and complexity
 - Monitor Mux dashboard for processing status
 
 **Agent Not Responding**
-- Verify OpenAI API key is valid
+- Verify Ollama is running and model is available
 - Check MCP tools are properly loaded
 - Review agent logs for error details
 
@@ -356,13 +456,25 @@ DEBUG=mastra:*
 LOG_LEVEL=debug
 ```
 
+### Testing Commands
 
-### Support
+```shell script
+# Test all components
+npm run test:mux-mcp && npm run test:asset-manager && npm run test:ollama
+
+# Test specific functionality
+npm run assets help              # Test CLI
+npm run assets recent 1          # Test recent assets
+npm run assets status ready     # Test status filtering
+```
+
+## Support
 
 For issues related to:
 - **Mastra Framework**: Check [Mastra Documentation](https://docs.mastra.ai)
 - **Mux API**: Visit [Mux Documentation](https://docs.mux.com)
 - **MCP Protocol**: See [MCP Specification](https://modelcontextprotocol.io)
+- **Ollama**: Check [Ollama Documentation](https://ollama.ai)
 
 ## License
 
@@ -378,8 +490,17 @@ MIT License - see LICENSE file for details.
 
 ## Changelog
 
+### v1.1.0
+- **NEW**: Mux Asset Manager CLI with comprehensive asset management
+- **NEW**: Intelligent asset analysis and reporting
+- **NEW**: Advanced filtering and search capabilities
+- **NEW**: Troubleshooting and optimization recommendations
+- **IMPROVED**: Enhanced error handling and user feedback
+- **IMPROVED**: Better integration with Ollama local models
+
 ### v1.0.0
 - Initial release with complete video processing workflow
 - AI agent integration with Mux MCP tools
 - Comprehensive error handling and monitoring
 - Production-ready deployment configuration
+```
