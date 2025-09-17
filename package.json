@@ -1,32 +1,43 @@
 {
   "name": "mastra-mux-workflow",
   "version": "1.0.0",
-  "description": "Mastra workflow with Mux MCP and ComfyUI integration using local Ollama",
+  "description": "A comprehensive video processing solution built with Mastra and Mux MCP integration",
   "main": "dist/mastra/index.js",
+  "type": "commonjs",
   "scripts": {
-    "dev": "tsx watch src/mastra/index.ts",
+    "dev": "tsx src/mastra/index.ts",
+    "dev:server": "tsx src/mastra/index.ts",
     "build": "tsc",
-    "test:ollama": "tsx src/scripts/test-ollama.ts",
-    "test:comfy": "tsx src/scripts/comfy-test.ts",
+    "start": "node dist/mastra/index.js",
+    "assets": "tsx src/scripts/asset-cli.ts",
     "test:mux-mcp": "tsx src/scripts/test-mux.ts",
     "test:asset-manager": "tsx src/scripts/test-asset-manager.ts",
-    "assets": "tsx src/scripts/asset-cli.ts",
-    "agent:recent-assets": "tsx src/mastra/agents/mux-asset-manager.ts",
-    "start": "node dist/mastra/index.js"
+    "test:ollama": "tsx src/scripts/test-ollama.ts",
+    "test:comfy": "tsx src/scripts/comfy-test.ts"
   },
   "dependencies": {
     "@mastra/core": "latest",
-    "@mastra/loggers": "latest",
     "@mastra/mcp": "latest",
-    "@stable-canvas/comfyui-client": "^1.4.4",
+    "@mastra/loggers": "latest",
+    "@ai-sdk/openai-compatible": "^1.0.0",
     "dotenv": "^16.3.1",
     "ollama": "^0.5.0",
-    "package": "^1.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
-  }
+    "typescript": "^5.0.0",
+    "tsx": "^4.0.0"
+  },
+  "keywords": [
+    "mastra",
+    "mux",
+    "video",
+    "processing",
+    "ai",
+    "mcp",
+    "ollama"
+  ],
+  "author": "",
+  "license": "MIT"
 }

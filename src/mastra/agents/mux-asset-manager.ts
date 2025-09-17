@@ -1,6 +1,8 @@
 import { muxMcpClient } from "../mcp/mux-client";
 import { OllamaProvider } from "../models/ollama-provider";
 import { MuxAsset } from "../../types/mux";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { Agent } from "@mastra/core/agent";
 
 // Working implementation based on test-mux.ts patterns
 class DirectMuxAssetManager {
@@ -381,16 +383,24 @@ Use all available Mux MCP tools to gather comprehensive data for this report.
     }
 }
 
-// Export compatible agent factory
+// Export compatible agent factory using OpenAI-compatible provider
 export async function createMuxAssetManagerAgent() {
-    const ollamaProvider = new OllamaProvider(
-        process.env.OLLAMA_BASE_URL || "http://192.168.88.16:11434"
-    );
+    // Create OpenAI-compatible provider for Ollama
+    const ollama = createOpenAICompatible({
+        name: 'ollama',
+        baseUrl: `${process.env.OLLAMA_BASE_URL || "http://192.168.88.16:11434"}/v1`,
+        apiKey: 'not-needed', // Ollama doesn't require API key
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
 
-    return {
-        async generate(prompt: string) {
-            const model = process.env.OLLAMA_MODEL || "gpt-oss:20b";
-            return await ollamaProvider.generate(prompt, model);
-        }
-    };
+    // Create and return proper Agent instance
+    return new Agent({
+        name: "Mux Asset Manager Agent",
+        description: "AI agent for managing Mux video assets with MCP tools",
+        instructions: "You are a video asset management specialist with access to Mux API tools through MCP.",
+        model: ollama(process.env.OLLAMA_MODEL || "gpt-oss:20b"),
+        tools: {}
+    });
 }
