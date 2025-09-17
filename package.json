@@ -2,11 +2,11 @@
   "name": "mastra-mux-workflow",
   "version": "1.0.0",
   "description": "Mastra workflow with Mux MCP and ComfyUI integration using local Ollama",
-  "main": "dist/index.js",
+  "main": "dist/mastra/index.js",
   "scripts": {
     "dev": "tsx watch src/mastra/index.ts",
     "build": "tsc",
-    "test:workflow": "tsx src/scripts/test-workflow.ts",
+    "test:workflow": "tsx src/scripts/test-video-workflow.ts",
     "test:agent": "tsx src/scripts/test-agent.ts",
     "test:ollama": "tsx src/scripts/test-ollama.ts",
     "test:ai-pipeline": "tsx src/scripts/test-ai-pipeline.ts",

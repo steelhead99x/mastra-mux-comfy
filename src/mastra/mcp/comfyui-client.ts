@@ -7,7 +7,7 @@ export const comfyUiMcpClient = new MCPClient({
             command: "python",
             args: ["-m", "comfy_mcp_server", "--transport", "stdio"],
             env: {
-                COMFYUI_URL: process.env.COMFYUI_URL || "http://localhost:8188",
+                COMFYUI_URL: process.env.COMFYUI_URL || "http://localhost:8000",
                 COMFYUI_EXTERNAL_URL: process.env.COMFYUI_EXTERNAL_URL || process.env.COMFYUI_URL || "http://localhost:8188"
             }
         }
