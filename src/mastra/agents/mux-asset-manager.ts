@@ -10,12 +10,33 @@ class DirectMuxAssetManager {
     private ollamaProvider: OllamaProvider;
     private tools: Record<string, any> = {};
     private toolsLoaded: boolean = false;
-    private readonly MAX_PROMPT_LENGTH = 4000; // Safe limit for most models
+    private readonly MAX_PROMPT_LENGTH = 4000;
+    private performanceMetrics: { [key: string]: number[] } = {};
 
     constructor() {
         this.ollamaProvider = new OllamaProvider(
             process.env.OLLAMA_BASE_URL || "http://192.168.88.16:11434"
         );
+    }
+
+    // ... existing constructor and methods ...
+
+    private recordPerformance(operation: string, duration: number) {
+        if (!this.performanceMetrics[operation]) {
+            this.performanceMetrics[operation] = [];
+        }
+        this.performanceMetrics[operation].push(duration);
+        
+        // Keep only last 10 measurements
+        if (this.performanceMetrics[operation].length > 10) {
+            this.performanceMetrics[operation].shift();
+        }
+    }
+
+    private getAveragePerformance(operation: string): number {
+        const metrics = this.performanceMetrics[operation];
+        if (!metrics || metrics.length === 0) return 0;
+        return metrics.reduce((sum, time) => sum + time, 0) / metrics.length;
     }
 
     private async initializeTools() {
@@ -138,19 +159,23 @@ class DirectMuxAssetManager {
     }
 
     private async processWithOllamaAndAPI(prompt: string, operation: string): Promise<{ text: string }> {
-        // Try to get real data from Mux API first
-        const realData = await this.tryExecuteActualMuxAPI(operation);
+        const startTime = Date.now();
+        
+        try {
+            // ... existing real data fetching code ...
+            const realData = await this.tryExecuteActualMuxAPI(operation);
 
-        const model = process.env.OLLAMA_MODEL || "gpt-oss:20b";
+            const model = process.env.OLLAMA_MODEL || "gpt-oss:20b";
+            console.log(`🤖 Processing with model: ${model}`);
 
-        // Build simplified prompt
-        let systemPrompt: string;
+            // ... existing prompt building code ...
+            let systemPrompt: string;
 
-        if (realData) {
-            // Truncate the data to keep prompt manageable
-            const truncatedData = this.truncateData(realData, 1500);
+            if (realData) {
+                // Truncate the data to keep prompt manageable
+                const truncatedData = this.truncateData(realData, 1500);
 
-            systemPrompt = `You are a Mux video asset manager with access to real API data.
+                systemPrompt = `You are a Mux video asset manager with access to real API data.
 
 REAL MUX DATA:
 ${truncatedData}
@@ -159,28 +184,36 @@ User request: ${prompt}
 
 Based on the real data above, provide a helpful and detailed response about the video assets.`;
 
-        } else {
-            systemPrompt = `You are a Mux video asset manager.
+            } else {
+                systemPrompt = `You are a Mux video asset manager.
 
 User request: ${prompt}
 
 Since no real Mux data is available, provide a comprehensive example response showing what the system would return with actual Mux assets. Include realistic asset IDs, timestamps, durations, and technical details.`;
-        }
+            }
 
-        // Check total prompt length
-        if (systemPrompt.length > this.MAX_PROMPT_LENGTH) {
-            console.log(`⚠️  Prompt too long (${systemPrompt.length} chars), using simplified version`);
-            systemPrompt = `You are a helpful Mux video asset manager.
+            // Check total prompt length
+            if (systemPrompt.length > this.MAX_PROMPT_LENGTH) {
+                console.log(`⚠️  Prompt too long (${systemPrompt.length} chars), using simplified version`);
+                systemPrompt = `You are a helpful Mux video asset manager.
 
 User request: ${prompt}
 
 Please provide a detailed response about video asset management with realistic examples.`;
-        }
+            }
 
-        try {
+            console.log(`📊 Prompt length: ${systemPrompt.length} characters`);
             console.log("🤖 Processing with Ollama...");
+            
+            const ollamaStart = Date.now();
             const response = await this.ollamaProvider.generate(systemPrompt, model);
-            console.log("✅ Ollama response received");
+            const ollamaDuration = Date.now() - ollamaStart;
+            
+            this.recordPerformance(operation, ollamaDuration);
+            const avgTime = this.getAveragePerformance(operation);
+            
+            console.log(`✅ Ollama response received in ${ollamaDuration}ms`);
+            console.log(`📈 Average time for ${operation}: ${Math.round(avgTime)}ms`);
 
             // Log if we're using real vs simulated data
             if (realData) {
@@ -191,20 +224,43 @@ Please provide a detailed response about video asset management with realistic e
 
             return response;
         } catch (error) {
-            console.error("❌ Ollama generation error:", error);
+            const duration = Date.now() - startTime;
+            console.error(`❌ Error after ${duration}ms:`, error);
             return {
                 text: `❌ Error processing request: ${error.message}\n\nNote: Unable to connect to Ollama server. Please check:\n1. Ollama is running\n2. Model is available\n3. Network connectivity`
             };
         }
     }
+
+    public getPerformanceReport(): string {
+        const report: string[] = ["🎯 Performance Report:", "=" + "=".repeat(30)];
+        
+        for (const [operation, times] of Object.entries(this.performanceMetrics)) {
+            if (times.length > 0) {
+                const avg = Math.round(times.reduce((sum, time) => sum + time, 0) / times.length);
+                const min = Math.min(...times);
+                const max = Math.max(...times);
+                report.push(`${operation}: avg ${avg}ms (${min}-${max}ms, ${times.length} samples)`);
+            }
+        }
+        
+        return report.join('\n');
+    }
 }
 
-// Updated MuxAssetManager using the working patterns
+// ... existing code ...
+
 export class MuxAssetManager {
     private directManager: DirectMuxAssetManager;
 
     constructor() {
         this.directManager = new DirectMuxAssetManager();
+    }
+
+    // ... existing methods ...
+
+    async getPerformanceReport(): Promise<string> {
+        return (this.directManager as any).getPerformanceReport();
     }
 
     async listAllAssets(options: {
@@ -216,7 +272,7 @@ export class MuxAssetManager {
         const prompt = `List all video assets from my Mux account with these requirements:
 
 ${options.limit ? `- Limit to ${options.limit} assets` : '- Show all assets'}
-${options.includeDetails ? '- Include full details' : '- Summary info only'}
+${options.includeDetails ? `- Include full details` : '- Summary info only'}
 ${options.filterByStatus ? `- Status: ${options.filterByStatus}` : '- All statuses'}
 ${options.filterByDate?.after ? `- After: ${options.filterByDate.after}` : ''}
 ${options.filterByDate?.before ? `- Before: ${options.filterByDate.before}` : ''}
@@ -308,4 +364,43 @@ export async function createMuxAssetManagerAgent() {
         model: ollama(process.env.OLLAMA_MODEL || "gpt-oss:20b"),
         tools: {}
     });
+}
+
+// Add this to test your Mux credentials directly
+async function testMuxCredentials() {
+    console.log("🔑 Testing Mux API credentials...");
+    
+    const tokenId = process.env.MUX_TOKEN_ID;
+    const tokenSecret = process.env.MUX_TOKEN_SECRET;
+    
+    if (!tokenId || !tokenSecret) {
+        console.error("❌ Missing MUX_TOKEN_ID or MUX_TOKEN_SECRET");
+        return false;
+    }
+    
+    try {
+        // Test direct API call
+        const auth = Buffer.from(`${tokenId}:${tokenSecret}`).toString('base64');
+        const response = await fetch('https://api.mux.com/video/v1/assets', {
+            headers: {
+                'Authorization': `Basic ${auth}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            console.log("✅ Mux API credentials are valid!");
+            const data = await response.json();
+            console.log(`📊 Found ${data.data?.length || 0} assets`);
+            return true;
+        } else {
+            console.error(`❌ Mux API error: ${response.status} ${response.statusText}`);
+            const errorData = await response.text();
+            console.error("Error details:", errorData);
+            return false;
+        }
+    } catch (error) {
+        console.error("❌ Failed to test Mux API:", error.message);
+        return false;
+    }
 }
