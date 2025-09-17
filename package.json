@@ -9,7 +9,7 @@
     "test:workflow": "tsx src/scripts/test-video-workflow.ts",
     "test:agent": "tsx src/scripts/test-agent.ts",
     "test:ollama": "tsx src/scripts/test-ollama.ts",
-    "test:comfy": "tsx src/mastra/workflows/ai-video-pipeline.ts",
+    "test:comfy": "tsx src/mastra/workflows/comfy-test.ts",
     "start": "node dist/mastra/index.js"
   },
   "dependencies": {
