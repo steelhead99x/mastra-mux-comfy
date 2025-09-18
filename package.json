@@ -14,27 +14,32 @@
     "basic:interactive": "tsx src/mastra/scripts/basic-interactive.ts",
     "test:tool-names": "tsx src/mastra/scripts/tool-name-test.ts",
     "test:explicit": "tsx src/mastra/scripts/explicit-tool-test.ts",
-    "test:constrained": "tsx src/mastra/scripts/constrained-agent.ts"
-  }
-
-,
+    "test:constrained": "tsx src/mastra/scripts/constrained-agent.ts",
+    "test:debug-explicit": "tsx src/mastra/scripts/debug-explicit-test.ts",
+    "test:ollama": "tsx src/mastra/scripts/simple-ollama-test.ts",
+    "test:non-streaming": "tsx src/mastra/scripts/non-streaming-test.ts",
+    "test:fixed-ollama": "tsx src/mastra/scripts/simple-ollama-test.ts",
+    "test:direct-tool": "tsx src/mastra/scripts/direct-tool-only-test.ts",
+    "test:minimal-agent": "tsx src/mastra/scripts/minimal-agent-test.ts"
+  },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^1.0.0",
+    "@ai-sdk/openai-compatible": "latest",
     "@mastra/core": "latest",
     "@mastra/loggers": "latest",
     "@mastra/mcp": "latest",
-    "dotenv": "^16.3.1",
+    "ai": "latest",
+    "dotenv": "latest",
     "mastra": "latest",
-    "ollama": "^0.5.0",
-    "zod": "^3.22.4"
+    "ollama": "latest",
+    "zod": "latest"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "@types/node": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "latest"
   },
   "keywords": [
     "mastra",
