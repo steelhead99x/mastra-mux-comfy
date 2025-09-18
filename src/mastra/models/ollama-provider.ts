@@ -24,6 +24,33 @@ export class OllamaProvider {
         }
     }
 
+    private cleanDebugData(data: any): any {
+        if (!data || typeof data !== 'object') return data;
+
+        const cleaned = { ...data };
+
+        // Remove or truncate large arrays
+        if (cleaned.context && Array.isArray(cleaned.context)) {
+            cleaned.context = `[Array of ${cleaned.context.length} items - hidden]`;
+        }
+
+        if (cleaned.raw && cleaned.raw.context) {
+            cleaned.raw = { ...cleaned.raw };
+            cleaned.raw.context = `[Array of ${cleaned.raw.context.length} items - hidden]`;
+        }
+
+        // Truncate very long responses in debug
+        if (cleaned.response && typeof cleaned.response === 'string' && cleaned.response.length > 500) {
+            cleaned.response = cleaned.response.substring(0, 500) + '... [truncated for debug]';
+        }
+
+        if (cleaned.text && typeof cleaned.text === 'string' && cleaned.text.length > 500) {
+            cleaned.text = cleaned.text.substring(0, 500) + '... [truncated for debug]';
+        }
+
+        return cleaned;
+    }
+
     async generate(prompt: string, model: string = "gpt-oss:20b", options: any = {}) {
         try {
             this.debugLog("Generate Request", {
@@ -112,10 +139,16 @@ Please provide a helpful response about video asset management.`;
                     completionTokens: response.eval_count || 0,
                     totalTokens: (response.prompt_eval_count || 0) + (response.eval_count || 0)
                 },
-                raw: response
+                // Don't include raw response in production to avoid huge context arrays
+                ...(this.debug ? {} : {})
             };
 
-            this.debugLog("Final Response", result);
+            this.debugLog("Final Response", {
+                textLength: result.text?.length || 0,
+                finishReason: result.finishReason,
+                usage: result.usage
+                // Exclude the actual text and raw data from debug output
+            });
 
             return result;
         } catch (error) {

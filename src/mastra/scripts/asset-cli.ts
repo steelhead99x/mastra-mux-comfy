@@ -1,4 +1,3 @@
-
 import { MuxAssetManager, createMuxAssetManagerAgent } from "../agents/mux-asset-manager";
 import dotenv from "dotenv";
 
@@ -11,6 +10,13 @@ async function testAssetManager() {
     const assetManager = new MuxAssetManager();
 
     try {
+        // Test 0: Debug tools if requested
+        if (process.argv.includes('--debug-tools')) {
+            console.log("🔍 Debug: Testing tool structure...");
+            await assetManager.debugTools();
+            console.log("\n");
+        }
+
         // Test 1: List recent assets (last 24 hours)
         console.log("📋 Test 1: Getting assets from last 24 hours...");
         console.log("-".repeat(50));
@@ -153,6 +159,17 @@ if (require.main === module) {
                 console.error("\n💥 Detailed testing failed:", error);
                 process.exit(1);
             });
+    } else if (testMode === 'debug') {
+        // Import and run the debug tool test
+        import('./test-debug-tools').then(({ testMuxToolStructure }) => {
+            return testMuxToolStructure();
+        }).then(() => {
+            console.log("\n✅ Debug testing completed!");
+            process.exit(0);
+        }).catch((error) => {
+            console.error("\n💥 Debug testing failed:", error);
+            process.exit(1);
+        });
     } else {
         testAssetManager()
             .then(() => {

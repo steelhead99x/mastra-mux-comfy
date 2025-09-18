@@ -5,7 +5,8 @@ export const muxMcpClient = new MCPClient({
     servers: {
         mux: {
             command: "npx",
-            args: ["-y", "@mux/mcp@latest", "--tools=dynamic"],
+            // Run the Mux MCP package in stdio server mode (default). Removing flags that put it into client mode.
+            args: ["-y", "@mux/mcp@latest"],
             env: {
                 MUX_TOKEN_ID: process.env.MUX_TOKEN_ID!,
                 MUX_TOKEN_SECRET: process.env.MUX_TOKEN_SECRET!,

@@ -5,6 +5,9 @@ import readline from "readline";
 
 dotenv.config();
 
+// In your debug files
+const DEBUG_LEVEL = process.env.DEBUG_LEVEL || 'minimal';
+
 // Add debug flag
 let DEBUG = process.env.DEBUG === 'true' || process.argv.includes('--debug');
 
@@ -12,13 +15,64 @@ function debugLog(label: string, data: any) {
     if (DEBUG) {
         console.log(`\n🔧 DEBUG - ${label}:`);
         console.log('─'.repeat(40));
-        if (typeof data === 'object' && data !== null) {
-            console.log(JSON.stringify(data, null, 2));
+        
+        if (DEBUG_LEVEL === 'minimal') {
+            // Show only essential info
+            const essential = extractEssentialDebugInfo(data);
+            console.log(JSON.stringify(essential, null, 2));
         } else {
-            console.log(data);
+            // Show full data (cleaned)
+            const cleanData = cleanDebugData(data);
+            console.log(JSON.stringify(cleanData, null, 2));
         }
+        
         console.log('─'.repeat(40));
     }
+}
+
+function extractEssentialDebugInfo(data: any): any {
+    if (!data || typeof data !== 'object') return data;
+    
+    return {
+        type: typeof data,
+        hasText: !!data.text,
+        textLength: data.text?.length || 0,
+        hasResponse: !!data.response,
+        responseLength: data.response?.length || 0,
+        usage: data.usage,
+        finishReason: data.finishReason,
+        // Skip context, raw data, and long text content
+    };
+}
+
+function cleanDebugData(data: any): any {
+    if (!data || typeof data !== 'object') return data;
+    
+    const cleaned = { ...data };
+    
+    // Remove large context arrays
+    if (cleaned.raw && cleaned.raw.context) {
+        cleaned.raw = { ...cleaned.raw };
+        cleaned.raw.context = `[Hidden: ${cleaned.raw.context.length} context tokens]`;
+    }
+    
+    // Truncate long text responses
+    if (cleaned.text && typeof cleaned.text === 'string' && cleaned.text.length > 300) {
+        cleaned.text = cleaned.text.substring(0, 300) + '... [truncated]';
+    }
+    
+    if (cleaned.response && typeof cleaned.response === 'string' && cleaned.response.length > 300) {
+        cleaned.response = cleaned.response.substring(0, 300) + '... [truncated]';
+    }
+    
+    // Clean nested objects
+    Object.keys(cleaned).forEach(key => {
+        if (typeof cleaned[key] === 'object' && cleaned[key] !== null) {
+            cleaned[key] = cleanDebugData(cleaned[key]);
+        }
+    });
+    
+    return cleaned;
 }
 
 async function interactiveTest() {

@@ -137,7 +137,7 @@ src/
 │   └── tools/comfy-video-tools.ts    # Video processing tools
 ├── scripts/
 │   ├── test-asset-manager.ts         # Agent testing
-│   ├── test-asset-manager-debug.ts   # Interactive mode
+│   ├── test-debug-tools.ts   # Interactive mode
 │   └── comfy-test.ts                 # ComfyUI testing
 ├── workflows/
 │   └── thumbnail-generator.json      # ComfyUI workflow
