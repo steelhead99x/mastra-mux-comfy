@@ -1,9 +1,18 @@
 // TypeScript
 import { Agent } from "@mastra/core";
+import { Memory } from "@mastra/memory";
+import { LibSQLStore } from "@mastra/libsql";
 import { ollamaModel } from "../models/ollama-vnext";
 import { muxMcpClient } from "../mcp/mux-client";
 
 console.log("Creating interactive agent...");
+
+// Create memory for the agent to store conversation context
+const agentMemory = new Memory({
+  storage: new LibSQLStore({
+    url: "file:./agent-memory.db", // Local SQLite file for memory storage
+  }),
+});
 
 /**
  * Proper Mastra Agent instance for the dev UI.
@@ -11,8 +20,9 @@ console.log("Creating interactive agent...");
  */
 export const interactiveAgent = new Agent({
   name: "interactive",
-  instructions: "Interactive terminal agent using Ollama (gpt-oss:20b). It can call Mux MCP tools (up to 10 summarized on startup). Ask about listing/searching assets, statuses, and reports.",
+  instructions: "Interactive terminal agent using Ollama (gpt-oss:20b). You have memory of our conversation history. It can call Mux MCP tools (up to 10 summarized on startup). Ask about listing/searching assets, statuses, and reports. Avoid repeating yourself by referencing previous messages in our conversation.",
   model: ollamaModel,
+  memory: agentMemory, // Add memory to prevent repetition
   tools: async () => {
     try {
       console.log("Loading tools for interactive agent...");

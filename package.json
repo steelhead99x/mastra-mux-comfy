@@ -18,8 +18,10 @@
   "dependencies": {
     "@ai-sdk/openai-compatible": "1.0.18",
     "@mastra/core": "latest",
+    "@mastra/libsql": "^0.14.2",
     "@mastra/loggers": "latest",
     "@mastra/mcp": "latest",
+    "@mastra/memory": "^0.15.2",
     "ai": "5.0.46",
     "dotenv": "latest",
     "mastra": "latest",
