@@ -32,8 +32,9 @@ async function interactiveMuxManager() {
     console.log("7. tools - Show available Mux tools");
     console.log("8. views - List video views analytics (choose range)");
     console.log("9. errors - List error analytics (choose range)");
-    console.log("10. help - Show this help message");
-    console.log("11. exit - Exit the application\n");
+    console.log("10. verify - Verify MCP connection and environment");
+    console.log("11. help - Show this help message");
+    console.log("12. exit - Exit the application\n");
 
     const askQuestion = (question: string): Promise<string> => {
         return new Promise((resolve) => {
@@ -156,6 +157,13 @@ async function interactiveMuxManager() {
                     await assetManager.debugTools();
                     break;
 
+                case 'verify':
+                    console.log("\n🔎 Verifying MCP connection and environment...");
+                    const verify = await assetManager.verifyConnectionAndEnv();
+                    console.log("\n✅ Verification:");
+                    console.log(verify.text);
+                    break;
+
                 case 'views': {
                     try {
                         const range = (await askQuestion("Range (today|7d|30d|custom) [7d]: ")).trim().toLowerCase() || '7d';
@@ -220,6 +228,7 @@ async function interactiveMuxManager() {
                     console.log("analytics         - Get account analytics summary");
                     console.log("status <status>   - Filter by status (ready/preparing/errored/waiting)");
                     console.log("tools             - Show available Mux MCP tools");
+                    console.log("verify            - Verify MCP connection and environment");
                     console.log("views             - List video views analytics (range prompt)");
                     console.log("errors            - List error analytics (range prompt)");
                     console.log("help              - Show this help message");

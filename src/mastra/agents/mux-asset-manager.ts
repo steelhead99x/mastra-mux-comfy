@@ -358,6 +358,10 @@ export class MuxAssetManager {
                 text += `${col(date, 20)} ${col(id, 20)} ${col(views, 8)} ${col(watch, 12)}\n`;
             });
             if (total > show) text += `...and ${total - show} more\n`;
+            if (total === 0 && src) {
+                // Provide raw details to help diagnose empty results
+                try { text += `\nRaw response: \n` + this.stringify(src); } catch {}
+            }
         } else if (src && typeof src === 'object') {
             text += this.stringify(src);
         } else {
@@ -434,6 +438,9 @@ export class MuxAssetManager {
                 text += `${col(date, 20)} ${col(error, 22)} ${col(count, 8)} ${col(context, 24)}` + "\n";
             });
             if (total > show) text += `...and ${total - show} more` + "\n";
+            if (total === 0 && src) {
+                try { text += `\nRaw response: \n` + this.stringify(src); } catch {}
+            }
         } else if (src && typeof src === 'object') {
             text += this.stringify(src);
         } else {
@@ -464,6 +471,95 @@ export class MuxAssetManager {
             return this.formatErrorsList(raw, `Error Analytics${rangeLabel}`, options.limit);
         } catch (e: any) {
             return { text: `Failed to list errors: ${e?.message || e}` };
+        }
+    }
+
+    // Verify MCP connectivity and attempt to detect the target Mux environment
+    async verifyConnectionAndEnv(): Promise<AgentResult> {
+        const lines: string[] = [];
+        const mask = (s?: string) => s ? (s.length <= 8 ? '***' : `${s.slice(0,4)}…${s.slice(-4)}`) : 'not set';
+        try {
+            lines.push('🔎 Verifying Mux MCP connection and environment');
+
+            // 1) Check env vars present
+            const tokenId = process.env.MUX_TOKEN_ID;
+            const tokenSecret = process.env.MUX_TOKEN_SECRET;
+            const muxEnv = process.env.MUX_ENVIRONMENT;
+            const muxBase = process.env.MUX_BASE_URL;
+            lines.push(`- MUX_TOKEN_ID: ${mask(tokenId)}`);
+            lines.push(`- MUX_TOKEN_SECRET: ${mask(tokenSecret)}`);
+            if (muxEnv) lines.push(`- MUX_ENVIRONMENT: ${muxEnv}`);
+            if (muxBase) lines.push(`- MUX_BASE_URL: ${muxBase}`);
+            if (!tokenId || !tokenSecret) {
+                lines.push('❌ Missing MUX tokens. Set MUX_TOKEN_ID and MUX_TOKEN_SECRET in .env');
+                return { text: lines.join('\n') };
+            }
+
+            // 2) List tools
+            const tools = await this.getTools();
+            const names = Object.keys(tools);
+            lines.push(`- MCP tools available: ${names.length}`);
+            lines.push(`  sample: ${names.slice(0,10).join(', ')}`);
+
+            // Helper to try calling a tool if available
+            const tryCall = async (patterns: RegExp[], args: any = {}) => {
+                try {
+                    const key = Object.keys(tools).find(k => patterns.some(p => p.test(k)));
+                    if (!key) return { ok: false, name: undefined, error: 'no matching tool' } as const;
+                    const tool = tools[key];
+                    const res = typeof tool.call === 'function' ? await tool.call(args)
+                        : typeof tool.execute === 'function' ? await tool.execute(args)
+                        : typeof tool.run === 'function' ? await tool.run(args)
+                        : undefined;
+                    return { ok: true, name: key, res } as const;
+                } catch (err: any) {
+                    return { ok: false, name: undefined, error: err?.message || String(err) } as const;
+                }
+            };
+
+            // 3) Try to detect account/environment info
+            const accountTry = await tryCall([/account/i, /environment/i, /project/i, /organization/i]);
+            if (accountTry.ok) {
+                lines.push(`- Account/Env tool responded: ${accountTry.name}`);
+                try {
+                    const obj = accountTry.res?.content ? accountTry.res : accountTry.res?.data ? accountTry.res : accountTry.res;
+                    lines.push(`  account/env payload present`);
+                } catch {}
+            } else {
+                lines.push(`- No explicit account/env tool found (${accountTry.error}).`);
+            }
+
+            // 4) Ping safe read endpoints
+            const assetsTry = await tryCall([/list.*asset/i, /assets?/i], { limit: 1 });
+            lines.push(assetsTry.ok ? `- Assets endpoint reachable${assetsTry.name ? ` (${assetsTry.name})` : ''}` : `- Assets endpoint failed: ${assetsTry.error}`);
+
+            const viewsTry = await tryCall([/list.*data.*video.*views/i, /list.*video.*views/i, /list.*views/i, /views?.*video/i, /views?/i], { timeframe: ['7d'], limit: 1 });
+            if (viewsTry.ok) {
+                lines.push(`- Views tool reachable${viewsTry.name ? ` (${viewsTry.name})` : ''}`);
+            } else {
+                lines.push(`- Views tool failed or not found: ${viewsTry.error}`);
+            }
+
+            const errorsTry = await tryCall([/list.*data.*errors?/i, /list.*errors?/i, /errors?/i], { timeframe: ['7d'], limit: 1 });
+            if (errorsTry.ok) {
+                lines.push(`- Errors tool reachable${errorsTry.name ? ` (${errorsTry.name})` : ''}`);
+            } else {
+                lines.push(`- Errors tool failed or not found: ${errorsTry.error}`);
+            }
+
+            // 5) High-level note about environment
+            if (muxEnv) {
+                lines.push(`ℹ️ Using explicit MUX_ENVIRONMENT=${muxEnv}. If you expect Production, ensure this matches your Production environment name.`);
+            } else {
+                lines.push(`ℹ️ No MUX_ENVIRONMENT provided. Mux tokens are scoped to their environment; ensure you created tokens in your Production environment.`);
+            }
+            if (muxBase) {
+                lines.push(`ℹ️ Custom MUX_BASE_URL is set; ensure it points to the correct API host.`);
+            }
+
+            return { text: lines.join('\n') };
+        } catch (e: any) {
+            return { text: `Verification failed: ${e?.message || e}` };
         }
     }
 }
