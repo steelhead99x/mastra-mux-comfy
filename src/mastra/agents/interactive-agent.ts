@@ -24,14 +24,14 @@ const agentMemory = new Memory({
   vector: new LibSQLVector({
     connectionUrl: "file:./agent-memory.db", // Use the same database for vector storage
   }),
-  embedder: ollamaProvider.textEmbeddingModel("gemma:300m"), // Use Ollama's gemma embedding model
+  embedder: ollamaProvider.textEmbeddingModel("embeddinggemma:300m"), // Use Ollama's gemma embedding model
   options: {
     workingMemory: {
       enabled: true,
     },
     semanticRecall: {
-      topK: 3,
-      messageRange: 2,
+      topK: 6,
+      messageRange: 10,
       scope: 'thread',
     },
   },
