@@ -1,12 +1,11 @@
+// Ensure telemetry instrumentation is loaded before Mastra
+import "./instrumentation";
 import { Mastra } from "@mastra/core";
+import mastraConfig from "../../mastra.config";
 import { createMuxAssetManagerAgent } from "./agents/mux-asset-manager";
 
-// Create minimal Mastra instance without pre-configured agents
-const mastra = new Mastra({
-    agents: {},  // Empty agents - we'll create them dynamically
-    workflows: {},
-    tools: []
-});
+// Create Mastra instance using the project config so the built-in server/UI is available
+const mastra = new Mastra(mastraConfig as any);
 
 // Export async function to initialize agent with tools
 export async function initializeMuxAssetManager() {
