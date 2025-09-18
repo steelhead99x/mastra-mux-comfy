@@ -27,10 +27,13 @@ async function interactiveMuxManager() {
     console.log("2. list [limit] - List all assets (default: show all)");
     console.log("3. search <query> - Search assets");
     console.log("4. report - Generate comprehensive asset report");
-    console.log("5. status <status> - Get assets by status (ready/preparing/errored/waiting)");
-    console.log("6. tools - Show available Mux tools");
-    console.log("7. help - Show this help message");
-    console.log("8. exit - Exit the application\n");
+    console.log("5. analytics - Get account analytics summary");
+    console.log("6. status <status> - Get assets by status (ready/preparing/errored/waiting)");
+    console.log("7. tools - Show available Mux tools");
+    console.log("8. views - List video views analytics (choose range)");
+    console.log("9. errors - List error analytics (choose range)");
+    console.log("10. help - Show this help message");
+    console.log("11. exit - Exit the application\n");
 
     const askQuestion = (question: string): Promise<string> => {
         return new Promise((resolve) => {
@@ -82,6 +85,59 @@ async function interactiveMuxManager() {
                     console.log("=" + "=".repeat(50));
                     break;
 
+                case 'analytics':
+                    console.log("\n🔍 Getting analytics summary...");
+                    const analytics = await assetManager.getAnalyticsSummary();
+                    console.log("\n📈 Analytics:");
+                    console.log(analytics.text);
+                    break;
+
+                case 'views': {
+                    const range = (await askQuestion("Range (today|7d|30d|custom) [7d]: ")).trim().toLowerCase() || '7d';
+                    let options: any = {};
+                    if (range === 'today') {
+                        options.timeframe = '24h';
+                    } else if (range === '7d' || range === '30d') {
+                        options.timeframe = range;
+                    } else if (range === 'custom') {
+                        const start = (await askQuestion("Start date (YYYY-MM-DD): ")).trim();
+                        const end = (await askQuestion("End date (YYYY-MM-DD): ")).trim();
+                        if (start) options.start = start;
+                        if (end) options.end = end;
+                    } else {
+                        options.timeframe = '7d';
+                    }
+                    const limitAns = (await askQuestion("Limit [20]: ")).trim();
+                    if (limitAns) options.limit = parseInt(limitAns);
+                    console.log("\n🔍 Fetching video views...");
+                    const views = await assetManager.listVideoViews(options);
+                    console.log("\n📈 Video Views:");
+                    console.log(views.text);
+                    break; }
+
+                case 'errors': {
+                    const range = (await askQuestion("Range (today|7d|30d|custom) [7d]: ")).trim().toLowerCase() || '7d';
+                    let options: any = {};
+                    if (range === 'today') {
+                        options.timeframe = '24h';
+                    } else if (range === '7d' || range === '30d') {
+                        options.timeframe = range;
+                    } else if (range === 'custom') {
+                        const start = (await askQuestion("Start date (YYYY-MM-DD): ")).trim();
+                        const end = (await askQuestion("End date (YYYY-MM-DD): ")).trim();
+                        if (start) options.start = start;
+                        if (end) options.end = end;
+                    } else {
+                        options.timeframe = '7d';
+                    }
+                    const limitAns = (await askQuestion("Limit [20]: ")).trim();
+                    if (limitAns) options.limit = parseInt(limitAns);
+                    console.log("\n🔍 Fetching error analytics...");
+                    const errs = await assetManager.listErrors(options);
+                    console.log("\n🚨 Errors:");
+                    console.log(errs.text);
+                    break; }
+
                 case 'status':
                     if (args.length === 0 || !['ready', 'preparing', 'errored', 'waiting'].includes(args[0])) {
                         console.log("❌ Please provide a valid status");
@@ -100,21 +156,79 @@ async function interactiveMuxManager() {
                     await assetManager.debugTools();
                     break;
 
+                case 'views': {
+                    try {
+                        const range = (await askQuestion("Range (today|7d|30d|custom) [7d]: ")).trim().toLowerCase() || '7d';
+                        let options: any = {};
+                        if (range === 'today') {
+                            options.timeframe = '24h';
+                        } else if (range === '7d' || range === '30d') {
+                            options.timeframe = range;
+                        } else if (range === 'custom') {
+                            const start = (await askQuestion("Start date (YYYY-MM-DD): ")).trim();
+                            const end = (await askQuestion("End date (YYYY-MM-DD): ")).trim();
+                            if (start) options.start = start;
+                            if (end) options.end = end;
+                        } else {
+                            options.timeframe = '7d';
+                        }
+                        const limitAns = (await askQuestion("Limit [20]: ")).trim();
+                        if (limitAns) options.limit = parseInt(limitAns);
+                        console.log("\n🔍 Fetching video views...");
+                        const views = await assetManager.listVideoViews(options);
+                        console.log("\n📈 Video Views:");
+                        console.log(views.text);
+                    } catch (err) {
+                        console.log("❌ Failed to fetch views:", err);
+                    }
+                    break; }
+
+                case 'errors': {
+                    try {
+                        const range = (await askQuestion("Range (today|7d|30d|custom) [7d]: ")).trim().toLowerCase() || '7d';
+                        let options: any = {};
+                        if (range === 'today') {
+                            options.timeframe = '24h';
+                        } else if (range === '7d' || range === '30d') {
+                            options.timeframe = range;
+                        } else if (range === 'custom') {
+                            const start = (await askQuestion("Start date (YYYY-MM-DD): ")).trim();
+                            const end = (await askQuestion("End date (YYYY-MM-DD): ")).trim();
+                            if (start) options.start = start;
+                            if (end) options.end = end;
+                        } else {
+                            options.timeframe = '7d';
+                        }
+                        const limitAns = (await askQuestion("Limit [20]: ")).trim();
+                        if (limitAns) options.limit = parseInt(limitAns);
+                        console.log("\n🔍 Fetching error analytics...");
+                        const errs = await assetManager.listErrors(options);
+                        console.log("\n🚨 Errors:");
+                        console.log(errs.text);
+                    } catch (err) {
+                        console.log("❌ Failed to fetch errors:", err);
+                    }
+                    break; }
+
                 case 'help':
                     console.log("\n📖 Available Commands:");
                     console.log("─".repeat(50));
                     console.log("recent [hours]    - Get recent assets (default: 24h)");
                     console.log("list [limit]      - List all assets");
                     console.log("search <query>    - Search for specific assets");
-                    console.log("report           - Generate detailed asset report");
-                    console.log("status <status>  - Filter by status (ready/preparing/errored/waiting)");
-                    console.log("tools            - Show available Mux MCP tools");
-                    console.log("help             - Show this help message");
-                    console.log("exit             - Exit the application");
+                    console.log("report            - Generate detailed asset report");
+                    console.log("analytics         - Get account analytics summary");
+                    console.log("status <status>   - Filter by status (ready/preparing/errored/waiting)");
+                    console.log("tools             - Show available Mux MCP tools");
+                    console.log("views             - List video views analytics (range prompt)");
+                    console.log("errors            - List error analytics (range prompt)");
+                    console.log("help              - Show this help message");
+                    console.log("exit              - Exit the application");
                     console.log("\nExamples:");
                     console.log("  recent 48        - Get assets from last 48 hours");
                     console.log("  list 10          - Show first 10 assets");
                     console.log("  search video     - Search for assets containing 'video'");
+                    console.log("  analytics        - Show analytics summary");
                     console.log("  status ready     - Show only ready assets");
                     break;
 
@@ -188,6 +302,21 @@ async function enhancedInteractiveMuxManager() {
             usage: "report",
             example: "report"
         },
+        analytics: {
+            desc: "Get analytics summary",
+            usage: "analytics",
+            example: "analytics"
+        },
+        views: {
+            desc: "List video views analytics",
+            usage: "views",
+            example: "views"
+        },
+        errors: {
+            desc: "List error analytics",
+            usage: "errors",
+            example: "errors"
+        },
         status: {
             desc: "Filter by status",
             usage: "status <status>",
@@ -242,6 +371,12 @@ async function enhancedInteractiveMuxManager() {
                     console.log(report.text);
                     break;
 
+                case 'analytics':
+                    console.log("\n📈 Getting analytics summary...");
+                    const analytics = await assetManager.getAnalyticsSummary();
+                    console.log(analytics.text);
+                    break;
+
                 case 'status':
                     const validStatuses = ['ready', 'preparing', 'errored', 'waiting'];
                     if (!args[0] || !validStatuses.includes(args[0])) {
@@ -252,6 +387,54 @@ async function enhancedInteractiveMuxManager() {
                     console.log(`\n📌 Assets with status "${args[0]}":`);
                     console.log(status.text);
                     break;
+
+                case 'views': {
+                    // Interactive prompt for views (time range and limit)
+                    const range = (await askQuestion("Range (today|7d|30d|custom) [7d]: ")).trim().toLowerCase() || '7d';
+                    const options: any = {};
+                    if (range === 'today') {
+                        options.timeframe = '24h';
+                    } else if (range === '7d' || range === '30d') {
+                        options.timeframe = range;
+                    } else if (range === 'custom') {
+                        const start = (await askQuestion("Start date (YYYY-MM-DD): ")).trim();
+                        const end = (await askQuestion("End date (YYYY-MM-DD): ")).trim();
+                        if (start) options.start = start;
+                        if (end) options.end = end;
+                    } else {
+                        options.timeframe = '7d';
+                    }
+                    const limitAns = (await askQuestion("Limit [20]: ")).trim();
+                    if (limitAns) options.limit = parseInt(limitAns);
+                    console.log("\n🔍 Fetching video views...");
+                    const views = await assetManager.listVideoViews(options);
+                    console.log("\n📈 Video Views:");
+                    console.log(views.text);
+                    break; }
+
+                case 'errors': {
+                    // Interactive prompt for errors (time range and limit)
+                    const range = (await askQuestion("Range (today|7d|30d|custom) [7d]: ")).trim().toLowerCase() || '7d';
+                    const options: any = {};
+                    if (range === 'today') {
+                        options.timeframe = '24h';
+                    } else if (range === '7d' || range === '30d') {
+                        options.timeframe = range;
+                    } else if (range === 'custom') {
+                        const start = (await askQuestion("Start date (YYYY-MM-DD): ")).trim();
+                        const end = (await askQuestion("End date (YYYY-MM-DD): ")).trim();
+                        if (start) options.start = start;
+                        if (end) options.end = end;
+                    } else {
+                        options.timeframe = '7d';
+                    }
+                    const limitAns = (await askQuestion("Limit [20]: ")).trim();
+                    if (limitAns) options.limit = parseInt(limitAns);
+                    console.log("\n🔍 Fetching error analytics...");
+                    const errs = await assetManager.listErrors(options);
+                    console.log("\n🚨 Errors:");
+                    console.log(errs.text);
+                    break; }
 
                 case 'tools':
                     console.log("\n🛠️  Available tools:");
