@@ -3,6 +3,7 @@ import { Mastra, Agent } from "@mastra/core";
 import { muxMcpClient } from "./mcp/mux-client";
 import { createOllamaModel } from "./models/ollama-model";
 import { MuxAssetManager } from "./agents/mux-asset-manager";
+import { InMemoryStore } from "@mastra/core/storage";
 
 // Load environment variables
 dotenv.config();
@@ -62,10 +63,18 @@ export const agents = {
     muxAssetManager: muxAgentInstance,
 };
 
+// Create a singleton storage to enable observability endpoints
+const existingStorage = (globalThis as any).__storage__ as InMemoryStore | undefined;
+const storage = existingStorage ?? new InMemoryStore();
+if (!existingStorage) {
+    (globalThis as any).__storage__ = storage;
+}
+
 // Create the Mastra instance (singleton) AFTER defining agents so Playground can discover them
 const existingMastra = globalThis.__mastra__;
 export const mastra: Mastra = existingMastra ?? new Mastra({
     agents,
+    storage,
 });
 if (!existingMastra) {
     globalThis.__mastra__ = mastra;
