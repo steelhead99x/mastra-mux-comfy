@@ -42,11 +42,7 @@ class MuxMCPTester {
     async testEnvironmentVariables(): Promise<void> {
         const requiredEnvVars = [
             'MUX_TOKEN_ID',
-            'MUX_TOKEN_SECRET',
-            'MUX_WEBHOOK_SECRET',
-            'MUX_SIGNING_KEY',
-            'MUX_PRIVATE_KEY',
-            'MUX_AUTHORIZATION_TOKEN'
+            'MUX_TOKEN_SECRET'
         ];
 
         const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -55,7 +51,7 @@ class MuxMCPTester {
             throw new Error(`Missing environment variables: ${missingVars.join(', ')}`);
         }
 
-        console.log("📋 All required environment variables are present");
+        console.log("📋 Required Mux auth variables are present (MUX_TOKEN_ID, MUX_TOKEN_SECRET)");
     }
 
     async testClientInitialization(): Promise<void> {
@@ -290,11 +286,7 @@ export async function debugMuxMCP(): Promise<void> {
 
         const envVars = [
             'MUX_TOKEN_ID',
-            'MUX_TOKEN_SECRET',
-            'MUX_WEBHOOK_SECRET',
-            'MUX_SIGNING_KEY',
-            'MUX_PRIVATE_KEY',
-            'MUX_AUTHORIZATION_TOKEN'
+            'MUX_TOKEN_SECRET'
         ];
 
         envVars.forEach(varName => {
