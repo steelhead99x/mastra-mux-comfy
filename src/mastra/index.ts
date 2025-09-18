@@ -1,8 +1,9 @@
-// Ensure telemetry instrumentation is loaded before Mastra
-import "./instrumentation";
+// Ensure telemetry instrumentation is loaded before Mastra (JS version to avoid TS in bundle)
+import "./instrumentation.js";
 import { Mastra } from "@mastra/core";
 import mastraConfig from "../../mastra.config";
 import { createMuxAssetManagerAgent } from "./agents/mux-asset-manager";
+import { pathToFileURL } from "node:url";
 
 // Create Mastra instance using a sanitized config to avoid registering plain objects as agents/workflows
 const sanitizedConfig = (() => {
@@ -27,6 +28,7 @@ export async function initializeMuxAssetManager() {
 }
 
 // Export the Mastra instance
+export { mastra };
 export default mastra;
 
 // Start the server if this file is run directly
@@ -41,6 +43,27 @@ async function startServer() {
         if (typeof (mastra as any).serve === 'function') {
             await (mastra as any).serve(Number(port));
         } else {
+            // Try to launch the Mastra Dev Server CLI to provide the full UI
+            try {
+                const { spawn } = await import('node:child_process');
+                console.log('ℹ️  @mastra/core does not expose mastra.serve(). Attempting to launch Mastra Dev Server via CLI...');
+                const child = spawn('npx', ['mastra@latest', 'dev', '--port', String(port)], {
+                    stdio: 'inherit',
+                    shell: false,
+                    env: { ...process.env }
+                });
+                child.on('exit', (code) => {
+                    if (code === 0) {
+                        console.log('✅ Mastra Dev Server exited cleanly.');
+                    } else {
+                        console.error(`❌ Mastra Dev Server exited with code ${code}. Falling back to minimal server...`);
+                    }
+                });
+                // Do not return here; if the CLI fails to start immediately, we will fall back below.
+            } catch (e) {
+                console.warn('⚠️  Failed to spawn Mastra Dev Server CLI automatically:', e);
+            }
+
             // Fallback: start a minimal HTTP server to provide a basic UI
             const http = await import('node:http');
 
@@ -97,9 +120,9 @@ async function startServer() {
   <div class="card">
     <h2>Get the full Mastra Dev UI</h2>
     <ol>
-      <li>Ensure you are on a version of <code>@mastra/core</code> that exposes <code>mastra.serve()</code>.</li>
-      <li>If available, this app will automatically launch the full UI instead of this fallback.</li>
-      <li>Alternatively, use the Mastra Dev Server (CLI): <code>npx mastra@latest dev</code> in a project configured with Mastra.</li>
+      <li>We attempted to auto-run <code>npx mastra@latest dev --port ${port}</code>. Check your terminal for the Dev Server logs.</li>
+      <li>If the CLI failed to start, ensure you have network access and permissions to run <code>npx</code>.</li>
+      <li>You can also run it manually in this project: <code>npx mastra@latest dev --port ${port}</code>.</li>
     </ol>
   </div>
 
@@ -113,16 +136,16 @@ async function startServer() {
     </ul>
   </div>
 
-  <p class="small">This fallback UI appears because the current <code>@mastra/core</code> in node_modules does not provide a built-in server. When you upgrade to a version with server support, this page will be replaced automatically and your mastra.config.ts will populate the UI.</p>
+  <p class="small">This fallback UI appears because the current <code>@mastra/core</code> in node_modules does not provide a built-in server. The project will try to launch the official Mastra Dev Server automatically. If it cannot, use the manual command above.</p>
 </body>
 </html>`);
             });
 
             await new Promise<void>((resolve) => server.listen(Number(port), resolve));
 
-            console.log(`✅ Development server running at http://localhost:${port}`);
+            console.log(`✅ Fallback development server running at http://localhost:${port}`);
             console.log(agentReady ? '🤖 Mux Asset Manager agent ready!' : '⚠️ Agent failed to initialize (see logs above)');
-            console.log("🎯 Open the UI in your browser or use the CLI commands listed below.");
+            console.log("🎯 If the Mastra Dev Server started successfully, use its URL. Otherwise, this minimal UI is available.");
 
             console.log("\n🔧 Available commands:");
             console.log("npm run test:asset-manager  - Test the asset manager");
@@ -147,6 +170,13 @@ async function startServer() {
     }
 }
 
-if (require.main === module) {
+// ESM-compatible direct-run check
+const isDirectRun = (() => {
+    const entry = process.argv && process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+    return import.meta && import.meta.url && entry && import.meta.url === entry;
+})();
+
+if (isDirectRun) {
+    // Note: intentional no-await; startServer manages its own async flow
     startServer();
 }

@@ -1,5 +1,6 @@
 import { muxMcpClient } from "../mcp/mux-client";
 import dotenv from "dotenv";
+import { pathToFileURL } from "node:url";
 
 // Load environment variables
 dotenv.config();
@@ -305,7 +306,12 @@ export async function debugMuxMCP(): Promise<void> {
 }
 
 // Run tests if this file is executed directly
-if (require.main === module) {
+const isDirectRun = (() => {
+    const entry = process.argv && process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+    return import.meta && import.meta.url && entry && import.meta.url === entry;
+})();
+
+if (isDirectRun) {
     const tester = new MuxMCPTester();
 
     tester.runAllTests()

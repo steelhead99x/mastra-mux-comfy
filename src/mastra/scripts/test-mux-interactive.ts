@@ -1,6 +1,7 @@
 import { MuxAssetManager } from "../agents/mux-asset-manager";
 import dotenv from "dotenv";
 import readline from "readline";
+import { pathToFileURL } from "node:url";
 
 dotenv.config();
 
@@ -491,7 +492,12 @@ async function enhancedInteractiveMuxManager() {
     }
 }
 
-if (require.main === module) {
+const isDirectRun = (() => {
+    const entry = process.argv && process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+    return import.meta && import.meta.url && entry && import.meta.url === entry;
+})();
+
+if (isDirectRun) {
     const mode = process.argv[2] || 'enhanced';
 
     if (mode === 'basic') {

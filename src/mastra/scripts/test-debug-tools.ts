@@ -2,6 +2,7 @@
 import { MuxAssetManager } from "../agents/mux-asset-manager";
 import dotenv from "dotenv";
 import readline from "readline";
+import { pathToFileURL } from "node:url";
 
 dotenv.config();
 
@@ -393,7 +394,12 @@ async function interactiveTest() {
     }
 }
 
-if (require.main === module) {
+const isDirectRun = (() => {
+    const entry = process.argv && process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+    return import.meta && import.meta.url && entry && import.meta.url === entry;
+})();
+
+if (isDirectRun) {
     interactiveTest().catch((error) => {
         console.error("❌ Fatal error:", error);
         if (DEBUG) {
