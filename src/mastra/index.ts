@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import { Mastra, Agent } from "@mastra/core";
 import { muxMcpClient } from "./mcp/mux-client";
 import { createOllamaModel } from "./models/ollama-model";
-import { MuxAssetManager } from "./agents/mux-asset-manager";
+import MuxAssetManager from "./agents/mux-asset-manager";
 import { InMemoryStore } from "@mastra/core/storage";
 
 // Load environment variables
@@ -14,8 +14,9 @@ declare global {
     var __mastra__: Mastra | undefined;
     // eslint-disable-next-line no-var
     var __muxAgent__: Agent | undefined;
+    // eslint-disable-next-line no-var
+    var __storage__: InMemoryStore | undefined;
 }
-
 
 // Factory to build the Mux Asset Manager Agent synchronously
 function buildMuxAssetManagerAgent(): Agent {
@@ -51,6 +52,13 @@ Use the available Mux MCP tools to help users manage their video assets effectiv
     });
 }
 
+// Create singleton storage
+const existingStorage = globalThis.__storage__;
+const storage = existingStorage ?? new InMemoryStore();
+if (!existingStorage) {
+    globalThis.__storage__ = storage;
+}
+
 // Reuse a single instance for both keys (singleton)
 const existingAgent = globalThis.__muxAgent__;
 const muxAgentInstance: Agent = existingAgent ?? buildMuxAssetManagerAgent();
@@ -62,23 +70,6 @@ if (!existingAgent) {
 export const agents = {
     muxAssetManager: muxAgentInstance,
 };
-
-// Create a singleton storage to enable observability endpoints
-const existingStorage = (globalThis as any).__storage__ as InMemoryStore | undefined;
-const storage = existingStorage ?? new InMemoryStore();
-if (!existingStorage) {
-    (globalThis as any).__storage__ = storage;
-}
-
-// Create the Mastra instance (singleton) AFTER defining agents so Playground can discover them
-const existingMastra = globalThis.__mastra__;
-export const mastra: Mastra = existingMastra ?? new Mastra({
-    agents,
-    storage,
-});
-if (!existingMastra) {
-    globalThis.__mastra__ = mastra;
-}
 
 // Expose MCP servers so Dev UI can list the server and its tools
 export const mcpServers = {
@@ -97,7 +88,18 @@ export async function getAgents() {
     return agents;
 }
 
-// Workflows (keep static)
+// Create the Mastra instance with clean configuration
+const existingMastra = globalThis.__mastra__;
+export const mastra: Mastra = existingMastra ?? new Mastra({
+    agents,
+    storage,
+});
+
+if (!existingMastra) {
+    globalThis.__mastra__ = mastra;
+}
+
+// Enhanced workflows with proper execution functions
 export const workflows = {
     videoProcessingWorkflow: {
         name: "Video Processing Pipeline",
@@ -111,6 +113,23 @@ export const workflows = {
         ],
         tools: ["list_assets", "get_asset", "create_asset"],
         triggers: ["manual", "webhook", "api"],
+        execute: async (runtimeContext: any) => {
+            try {
+                const manager = new MuxAssetManager();
+                const result = await manager.generateAssetReport();
+                return {
+                    success: true,
+                    data: result.text,
+                    message: "Video processing workflow completed"
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error),
+                    message: "Video processing workflow failed"
+                };
+            }
+        }
     },
 
     assetManagementWorkflow: {
@@ -125,26 +144,95 @@ export const workflows = {
         ],
         tools: ["list_assets", "list_data_video_views", "list_data_errors"],
         triggers: ["scheduled", "manual", "storage_threshold"],
+        execute: async (runtimeContext: any) => {
+            try {
+                const manager = new MuxAssetManager();
+                const result = await manager.getAnalyticsSummary();
+                return {
+                    success: true,
+                    data: result.text,
+                    message: "Asset management workflow completed"
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error),
+                    message: "Asset management workflow failed"
+                };
+            }
+        }
     },
 
-    errorResolutionWorkflow: {
-        name: "Error Detection & Resolution",
-        description: "Automated error detection and resolution for video assets",
+    mux_list_data_assets: {
+        name: "List Mux Data Assets",
+        description: "List available Mux video assets and basic metadata using MCP tools.",
         steps: [
-            "Monitor asset processing status",
-            "Detect and categorize errors",
-            "Attempt automatic resolution",
-            "Generate error reports",
-            "Escalate unresolved issues",
+            "Fetch asset list from Mux",
+            "Map essential fields (id, createdAt, status, duration, playbackId)",
+            "Return a concise summary for display",
         ],
-        tools: ["list_assets", "list_data_errors", "get_asset"],
-        triggers: ["scheduled", "error_webhook", "status_change"],
+        tools: ["list_assets"],
+        triggers: ["manual", "api"],
+        execute: async (runtimeContext: any) => {
+            try {
+                const manager = new MuxAssetManager();
+                const result = await manager.listAllAssets({ limit: 10, includeDetails: true });
+                return {
+                    success: true,
+                    data: result.text,
+                    message: "Successfully retrieved Mux assets"
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error),
+                    message: "Failed to retrieve Mux assets"
+                };
+            }
+        }
+    },
+
+    mux_list_assets: {
+        name: "List Mux Assets",
+        description: "Alias of mux_list_data_assets for Dev UI compatibility.",
+        steps: [
+            "Fetch asset list from Mux",
+            "Map essential fields (id, createdAt, status, duration, playbackId)",
+            "Return a concise summary for display",
+        ],
+        tools: ["list_assets"],
+        triggers: ["manual", "api"],
+        execute: async (runtimeContext: any) => {
+            try {
+                const manager = new MuxAssetManager();
+                const result = await manager.listAllAssets({ limit: 10, includeDetails: true });
+                return {
+                    success: true,
+                    data: result.text,
+                    message: "Successfully retrieved Mux assets"
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error),
+                    message: "Failed to retrieve Mux assets"
+                };
+            }
+        }
     },
 };
 
+// Define proper return types to fix export issues
+interface OllamaConnectionResult {
+    healthy: boolean;
+    models?: string[];
+    health?: any;
+    error?: string;
+}
+
 // Utilities (lazy work)
 export const utilities = {
-    async getMuxTools() {
+    async getMuxTools(): Promise<string[]> {
         try {
             const tools = await muxMcpClient.getTools();
             return Object.keys(tools);
@@ -154,7 +242,7 @@ export const utilities = {
         }
     },
 
-    async testOllamaConnection() {
+    async testOllamaConnection(): Promise<OllamaConnectionResult> {
         try {
             const { OllamaProvider } = await import("./models/ollama-provider");
             const provider = new OllamaProvider(process.env.OLLAMA_BASE_URL);
@@ -162,7 +250,7 @@ export const utilities = {
             const models = await provider.listModels();
             return {
                 healthy: true,
-                models: models.map((m) => m.name),
+                models: models.map((m: any) => m.name),
                 health,
             };
         } catch (error) {
@@ -173,7 +261,7 @@ export const utilities = {
         }
     },
 
-    async getAssetSummary() {
+    async getAssetSummary(): Promise<string> {
         try {
             const manager = new MuxAssetManager();
             const report = await manager.generateAssetReport();

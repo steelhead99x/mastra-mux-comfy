@@ -5,35 +5,36 @@
   "main": "dist/mastra/index.js",
   "type": "module",
   "scripts": {
-    "dev": "mastra dev",
-    "dev:custom": "tsx src/mastra/index.ts",
+    "dev": "NODE_OPTIONS='--import tsx/esm' mastra dev",
+    "dev:alt": "tsx --esm src/mastra/index.ts",
     "build": "tsc",
     "start": "node dist/mastra/index.js",
-    "assets": "tsx src/mastra/scripts/asset-cli.ts",
-    "assets:debug": "tsx src/mastra/scripts/asset-cli.ts debug",
-    "assets:debug-tools": "tsx src/mastra/scripts/asset-cli.ts --debug-tools",
-    "test:asset-manager": "tsx src/mastra/scripts/test-mux-interactive.ts",
-    "test:debug-tools": "tsx src/mastra/scripts/test-debug-tools.ts",
-    "test:mux-mcp": "tsx src/mastra/scripts/test-mux.ts",
-    "test:ollama": "tsx src/mastra/scripts/test-ollama.ts",
-    "test:comfy": "tsx src/mastra/scripts/comfy-test.ts",
-    "mux:interactive": "tsx src/mastra/scripts/test-mux-interactive.ts",
-    "mux:interactive:debug": "DEBUG=true tsx src/mastra/scripts/test-mux-interactive.ts"
-  },
+    "test:basic-agent": "tsx src/mastra/scripts/test-basic-agent.ts",
+    "test:simple": "tsx src/mastra/scripts/simple-test.ts",
+    "basic:interactive": "tsx src/mastra/scripts/basic-interactive.ts",
+    "test:tool-names": "tsx src/mastra/scripts/tool-name-test.ts",
+    "test:explicit": "tsx src/mastra/scripts/explicit-tool-test.ts",
+    "test:constrained": "tsx src/mastra/scripts/constrained-agent.ts"
+  }
+
+,
   "dependencies": {
-    "@mastra/core": "latest",
-    "@mastra/mcp": "latest",
-    "@mastra/loggers": "latest",
     "@ai-sdk/openai-compatible": "^1.0.0",
+    "@mastra/core": "latest",
+    "@mastra/loggers": "latest",
+    "@mastra/mcp": "latest",
     "dotenv": "^16.3.1",
+    "mastra": "latest",
     "ollama": "^0.5.0",
-    "zod": "^3.22.4",
-    "mastra": "latest"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "tsx": "^4.0.0"
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "keywords": [
     "mastra",

@@ -1,22 +1,25 @@
-import { OllamaProvider } from '../models/ollama-provider';
+import { OllamaProvider } from "../models/ollama-provider";
+import type { OllamaHealthResponse } from "../models/ollama-provider";
 
 export interface OllamaHealthStatus {
     healthy: boolean;
-    model?: string;
+    model: string;
     error?: string;
     models: string[];
 }
 
 export async function checkOllamaHealth(provider: OllamaProvider, model: string): Promise<OllamaHealthStatus> {
     try {
-        // Fix: Use healthCheck instead of checkHealth
-        const healthResult = await provider.healthCheck(model);
+        // Fix: Use healthCheck without parameters
+        const healthResult: OllamaHealthResponse = await provider.healthCheck();
         const models = await provider.listModels();
-        
+
         return {
-            healthy: healthResult.healthy,
+            // Fix: Check if status is 'healthy'
+            healthy: healthResult.status === 'healthy',
             model,
-            error: healthResult.error,
+            // Fix: No error property in healthResult, only set if unhealthy
+            error: healthResult.status !== 'healthy' ? 'Health check failed' : undefined,
             // Fix: Access name property correctly
             models: models.map(m => m.name)
         };
@@ -30,24 +33,22 @@ export async function checkOllamaHealth(provider: OllamaProvider, model: string)
     }
 }
 
-export async function ensureModelExists(provider: OllamaProvider, modelName: string): Promise<boolean> {
+export async function ensureModel(provider: OllamaProvider, modelName: string): Promise<boolean> {
     try {
+        // Check if model exists
         const models = await provider.listModels();
-        // Fix: Access name property correctly
-        const exists = models.some(m => m.name === modelName);
-        
-        if (!exists) {
-            console.log(`Model ${modelName} not found. Attempting to pull...`);
-            const pulled = await provider.pullModel(modelName);
-            if (!pulled) {
-                console.error(`Failed to pull model ${modelName}`);
-                return false;
-            }
+        const modelExists = models.some(m => m.name === modelName);
+
+        if (!modelExists) {
+            console.log(`Model ${modelName} not found, attempting to pull...`);
+            // Fix: Use pull method instead of pullModel
+            await provider.pull(modelName);
+            console.log(`Successfully pulled model: ${modelName}`);
         }
-        
+
         return true;
     } catch (error) {
-        console.error('Error checking/pulling model:', error);
+        console.error(`Failed to ensure model ${modelName}:`, error);
         return false;
     }
 }
