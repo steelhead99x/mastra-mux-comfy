@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { muxMcpClient } from "../mcp/mux-client";
-import { OllamaProvider } from "../models/ollama-provider";
+import { Agent } from "@mastra/core";
+import { createOllamaModel } from "../models/ollama-model";
 
 dotenv.config();
 
@@ -564,14 +565,41 @@ export class MuxAssetManager {
     }
 }
 
+// Add this to your MuxAssetManager class or createMuxAssetManagerAgent function
+
 export async function createMuxAssetManagerAgent() {
-    // Minimal agent that can generate responses using Ollama
-    const provider = new OllamaProvider(process.env.OLLAMA_BASE_URL);
-    const model = process.env.OLLAMA_MODEL || 'gpt-oss:20b';
-    return {
-        async generate(prompt: string) {
-            const res = await provider.generate(prompt, model);
-            return res;
+    // Create a proper Mastra Agent instance
+    const agent = new Agent({
+        name: 'muxAssetManager',
+        instructions: `You are the Mux Asset Manager, an AI assistant specialized in video asset management using Mux APIs.
+        
+Your capabilities include:
+- Managing video assets and their lifecycle
+- Analyzing video performance and engagement metrics  
+- Generating comprehensive reports and insights
+- Troubleshooting asset processing issues
+- Optimizing video delivery and playback
+
+Use the available Mux tools to help users manage their video assets effectively.`,
+
+        model: createOllamaModel({
+            model: process.env.OLLAMA_MODEL || 'llama3.2:3b',
+            baseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+            temperature: 0.7,
+            maxTokens: 2048
+        }),
+
+        // Provide the MCP tools to the agent
+        tools: async () => {
+            try {
+                const muxTools = await muxMcpClient.getTools();
+                return muxTools;
+            } catch (error) {
+                console.warn('Failed to get MCP tools for agent:', error);
+                return {};
+            }
         }
-    };
+    });
+
+    return agent;
 }
