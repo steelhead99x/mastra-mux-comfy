@@ -10,7 +10,8 @@
     "build": "tsc",
     "start": "node dist/mastra/index.js",
     "test:auth": "tsx src/mastra/scripts/test-mux-auth.ts",
-    "test:list": "tsx src/mastra/scripts/test-list-assets.ts"
+    "test:list": "tsx src/mastra/scripts/test-list-assets.ts",
+    "agent:list": "tsx src/mastra/agents/agent-list-assets.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "latest",
