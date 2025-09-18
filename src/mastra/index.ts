@@ -15,12 +15,6 @@ declare global {
     var __muxAgent__: Agent | undefined;
 }
 
-// Create the Mastra instance (singleton)
-const existingMastra = globalThis.__mastra__;
-export const mastra: Mastra = existingMastra ?? new Mastra({});
-if (!existingMastra) {
-    globalThis.__mastra__ = mastra;
-}
 
 // Factory to build the Mux Asset Manager Agent synchronously
 function buildMuxAssetManagerAgent(): Agent {
@@ -68,6 +62,15 @@ export const agents = {
     muxAssetManager: muxAgentInstance,
     "mux-asset-manager": muxAgentInstance,
 };
+
+// Create the Mastra instance (singleton) AFTER defining agents so Playground can discover them
+const existingMastra = globalThis.__mastra__;
+export const mastra: Mastra = existingMastra ?? new Mastra({
+    agents,
+});
+if (!existingMastra) {
+    globalThis.__mastra__ = mastra;
+}
 
 // Expose MCP servers so Dev UI can list the server and its tools
 export const mcpServers = {
