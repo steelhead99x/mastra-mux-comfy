@@ -27,3 +27,34 @@ export const interactiveAgent = new Agent({
 });
 
 console.log("Interactive agent created successfully:", interactiveAgent.name);
+
+/**
+ * Interactive agent runner function for the terminal interface
+ */
+export async function runInteractiveAgent(): Promise<void> {
+  console.log("🤖 Starting interactive agent session...");
+  
+  try {
+    // Initialize the MCP client and tools
+    console.log("🔧 Loading MCP tools...");
+    const tools = await muxMcpClient.getTools();
+    console.log(`✅ Loaded ${Object.keys(tools).length} tools: ${Object.keys(tools).join(', ')}`);
+    
+    // You can add interactive terminal logic here
+    // For now, we'll just log that the agent is ready
+    console.log("🚀 Interactive agent is ready! Agent name:", interactiveAgent.name);
+    console.log("💡 Agent instructions:", interactiveAgent.instructions);
+    
+    // Keep the process alive for the interactive session
+    console.log("📝 Agent session running. Press Ctrl+C to exit.");
+    
+    // Simple keep-alive loop
+    while (true) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+  } catch (error) {
+    console.error("❌ Failed to start interactive agent:", error);
+    throw error;
+  }
+}
