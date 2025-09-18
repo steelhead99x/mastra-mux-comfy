@@ -1,260 +1,181 @@
-# Mastra Mux Asset Manager
+# Mastra Mux ComfyUI Workflow
 
-AI-powered video asset management system with local LLM processing, Mux API integration, and ComfyUI workflow support.
+A comprehensive video processing solution built with Mastra framework, featuring an interactive AI agent powered by Ollama that can manage Mux video assets through MCP (Model Context Protocol) integration.
 
-## What it does
+## Features
 
-🎬 **Intelligent Video Asset Management** - Chat with your Mux video library using natural language  
-🤖 **Local AI Processing** - Uses Ollama for private, offline AI analysis  
-🔧 **Real-time Mux Integration** - Direct access to Mux API through Model Context Protocol (MCP)  
-🎨 **ComfyUI Integration** - AI-powered video processing workflows  
-📊 **Smart Analytics** - Comprehensive reports and insights about your video assets
+- 🤖 **Interactive AI Agent** - Ollama-powered agent with conversation memory
+- 🎥 **Mux Integration** - Full MCP integration for video asset management
+- 🧠 **Persistent Memory** - SQLite-based conversation history storage
+- 🛠️ **Development Tools** - Comprehensive test scripts and utilities
+- 📊 **Dev UI** - Built-in Mastra development interface
 
-## Quick Start
+## Prerequisites
 
-### 1. Prerequisites
 - Node.js 18+
-- [Ollama](https://ollama.ai) with a model (e.g., `ollama pull llama3.1:8b`)
-- [ComfyUI](https://github.com/comfyanonymous/ComfyUI) (optional - for video processing)
-- Mux account (optional - works without credentials)
+- [Ollama](https://ollama.ai) installed and running locally
+- Mux account with API credentials
+- Ollama model: `gpt-oss:20b` (or configure your preferred model)
 
-### 2. Setup
+## Setup
+
+1. **Install dependencies**
 ```shell script
-git clone <this-repo>
-cd mastra-mux-workflow
 npm install
-
-# Configure Ollama (adjust IP if needed)
-echo "OLLAMA_BASE_URL=http://localhost:11434" > .env
-echo "OLLAMA_MODEL=llama3.1:8b" >> .env
 ```
 
 
-### 3. Test Everything Works
+2. **Configure environment variables**
+   Create a `.env` file with:
+```
+# Mux API credentials
+   MUX_TOKEN_ID=your_mux_token_id
+   MUX_TOKEN_SECRET=your_mux_token_secret
+   
+   # Ollama configuration (optional)
+   OLLAMA_BASE_URL=http://localhost:11434
+   OLLAMA_MODEL=gpt-oss:20b
+```
+
+
+3. **Pull the Ollama model**
 ```shell script
-# Test Ollama connection
-npm run test:ollama
-
-# Test the AI agent
-npm run test:asset-manager
-
-# Test ComfyUI connection (optional)
-npm run test:comfy
+ollama pull gpt-oss:20b
 ```
 
 
-## Features & Commands
+## Usage
 
-### 🧪 Testing Commands
+### Development Mode
+
+Start the Mastra development server with the interactive agent:
+
 ```shell script
-npm run test:ollama          # Test Ollama connection
-npm run test:asset-manager   # Test AI asset analysis
-npm run test:mux-mcp         # Test Mux API (needs credentials)
-npm run test:comfy           # Test ComfyUI connection
+npm run dev
 ```
 
 
-### 🎯 Interactive Asset Manager
+This launches the Mastra dev UI at `http://localhost:4111` where you can:
+- Chat with the interactive agent
+- View agent configuration and tools
+- Monitor conversation memory
+- Access Mux MCP tools
+
+### Alternative Development Mode
+
+Run the agent directly in terminal mode:
+
 ```shell script
-npm run mux:interactive      # Interactive chat with your video assets
+npm run dev:alt
 ```
 
 
-Available commands in interactive mode:
-- `recent` - Get recent assets
-- `list` - List all assets
-- `search <query>` - Search assets
-- `report` - Generate comprehensive report
-- `status <ready|preparing|errored>` - Filter by status
+### Production
 
-### 🚀 Development Server
+Build and run the compiled version:
+
 ```shell script
-npm run dev                  # Start Mastra agent system
-npm start                   # Production server
+npm run build
+npm start
 ```
 
 
-## Core Features
+## Available Scripts
 
-### 🤖 AI Asset Analysis
-Ask questions like:
-- "Show me all my video assets from last week"
-- "Which assets are still processing?"
-- "Generate a report of failed uploads"
-- "Find videos longer than 10 minutes"
+### Core Scripts
 
-### 🎨 Video Processing with ComfyUI
-- AI-powered video thumbnail generation
-- Custom video processing workflows
-- Automated video enhancement
-- Integration with Mux video pipeline
+- **`npm run dev`** - Start Mastra development server with full UI
+- **`npm run dev:alt`** - Run interactive agent directly in terminal
+- **`npm run build`** - Compile TypeScript to JavaScript
+- **`npm start`** - Run compiled production version
 
-### 📊 Smart Reports
-- Asset inventory and status breakdown
-- Processing success rates
-- Storage usage analytics
-- Performance recommendations
-- Error identification and solutions
+### Test Scripts
 
-### 🔧 Technical Integration
-- **Mastra Framework**: Modern AI agent architecture
-- **Ollama Local LLM**: Private AI processing
-- **Mux MCP**: Direct API integration via Model Context Protocol
-- **ComfyUI**: AI video processing workflows
-- **TypeScript**: Full type safety
+- **`npm run test:auth`** - Test Mux API authentication
+- **`npm run test:list`** - Test Mux asset listing functionality
+- **`npm run test:vnext`** - Demo Ollama text generation (streaming/non-streaming)
+- **`npm run test:comfyClient`** - Test ComfyUI client integration
+- **`npm run agent:list`** - Run legacy asset listing agent
 
-## Configuration
+## Interactive Agent Capabilities
 
-### Basic Setup (.env)
-```
-# Ollama (required)
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.1:8b
+The interactive agent (`interactive`) features:
 
-# Mux (optional - for real data)
-MUX_TOKEN_ID=your_token_id
-MUX_TOKEN_SECRET=your_token_secret
+- **🧠 Memory** - Remembers conversation history across sessions
+- **🎥 Mux Tools** - Access to Mux MCP tools for video asset management
+- **🤖 Ollama Model** - Powered by `gpt-oss:20b` via AI SDK
+- **📊 Asset Management** - List, search, and manage Mux video assets
+- **📈 Status Monitoring** - Check asset processing status and reports
 
-# ComfyUI (optional - for video processing)
-COMFYUI_BASE_URL=http://127.0.0.1:8000
-```
+### Example Interactions
 
+Ask the agent questions like:
+- "List my recent video assets"
+- "Show me assets that are ready for playback"
+- "What's the status of asset [ID]?"
+- "Search for assets containing 'demo' in the title"
 
-### Supported Models
-- `llama3.1:8b` (recommended)
-- `gpt-oss:20b`
-- Any Ollama-compatible model
+## Architecture
 
-## Project Structure
-```
-src/
-├── mastra/
-│   ├── agents/mux-asset-manager.ts    # Main AI agent
-│   ├── models/ollama-provider.ts      # Ollama integration
-│   ├── mcp/
-│   │   ├── mux-client.ts             # Mux API client
-│   │   └── comfyui-client.ts         # ComfyUI integration
-│   └── tools/comfy-video-tools.ts    # Video processing tools
-├── scripts/
-│   ├── test-asset-manager.ts         # Agent testing
-│   ├── test-debug-tools.ts   # Interactive mode
-│   └── comfy-test.ts                 # ComfyUI testing
-├── workflows/
-│   └── thumbnail-generator.json      # ComfyUI workflow
-└── types/mux.ts                      # TypeScript definitions
-```
+### Core Components
 
+- **`src/mastra/index.ts`** - Main Mastra instance and agent bootstrap
+- **`src/mastra/agents/interactive-agent.ts`** - Interactive AI agent with memory
+- **`src/mastra/mcp/mux-client.ts`** - Mux MCP client for tool integration
+- **`src/mastra/models/ollama-vnext.ts`** - Ollama AI SDK integration
 
-## How It Works
+### Configuration
 
-1. **AI Agent**: Processes natural language requests about video assets
-2. **MCP Integration**: Dynamically loads Mux API tools for real-time data
-3. **Local LLM**: Uses Ollama for private AI analysis without cloud dependencies
-4. **ComfyUI Integration**: Processes videos using AI workflows
-5. **Smart Responses**: Combines real Mux data with AI-generated insights
+- **`mastra.config.js`** - Project-level Mastra configuration
+- **`package.json`** - Dependencies and scripts
+- **`.env`** - Environment variables (create from template above)
+
+## Memory System
+
+The agent uses persistent memory storage via SQLite:
+
+- **Storage**: `./agent-memory.db` (auto-created)
+- **Features**: Conversation history, context recall, semantic search
+- **Provider**: LibSQL for local development
+
+## MCP Integration
+
+Mux tools are dynamically loaded via MCP:
+
+- **Transport**: Stdio transport to `@mux/mcp` server
+- **Tools**: Asset listing, status checks, playback management
+- **Auth**: Token-based authentication via environment variables
+
+## Development Tips
+
+1. **Monitor Logs** - The agent provides detailed logging for MCP connections and tool loading
+2. **Test Scripts** - Use individual test scripts to verify components before running the full agent
+3. **Memory Reset** - Delete `agent-memory.db` to clear conversation history
+4. **Model Changes** - Modify `OLLAMA_MODEL` in `.env` to use different Ollama models
 
 ## Troubleshooting
 
-### Ollama Issues
+### Common Issues
+
+- **MCP Connection Failed** - Verify Mux credentials in `.env`
+- **Ollama Model Missing** - Run `ollama pull gpt-oss:20b`
+- **Port Conflicts** - Mastra dev server uses port 4111 by default
+- **Memory Issues** - Check SQLite file permissions for `agent-memory.db`
+
+### Debug Commands
+
 ```shell script
-# Check Ollama is running
-ollama serve
+# Test Mux authentication
+npm run test:auth
 
-# List available models
-ollama list
+# Test Ollama connectivity  
+npm run test:vnext
 
-# Pull a model if needed
-ollama pull llama3.1:8b
+# Verify MCP tool loading
+npm run test:list
 ```
 
-
-### ComfyUI Issues
-```shell script
-# Start ComfyUI server
-python main.py --listen
-
-# Check if running on correct port
-curl http://127.0.0.1:8000/queue
-```
-
-
-### Debug Mode
-```shell script
-# See detailed responses
-DEBUG=true npm run test:asset-manager
-```
-
-
-## Example Output
-
-```
-🎬 Interactive Mux Asset Manager
-===============================
-
-Enter command: recent
-
-🔍 Getting recent assets...
-
-📋 Response:
-Based on your Mux account, here's an analysis of recent video assets:
-
-ASSET INVENTORY (Last 24 Hours):
-- Total new assets: 3
-- Ready: 2 assets
-- Processing: 1 asset
-- Errors: 0 assets
-
-DETAILED ASSET LIST:
-1. Asset ID: abc123 (Ready)
-   - Duration: 2:34 minutes
-   - Resolution: 1920x1080
-   - Created: 2024-01-15 14:30 UTC
-
-[... detailed analysis continues ...]
-```
-
-
-## ComfyUI Integration
-
-### Test ComfyUI Connection
-```shell script
-npm run test:comfy
-```
-
-
-Expected output:
-```
-🚀 Testing ComfyUI Connection...
-
-1️⃣ Testing if ComfyUI server is running...
-✅ ComfyUI server is running!
-
-2️⃣ Getting available nodes...
-✅ Found 847 node types
-
-3️⃣ Getting system information...
-✅ System stats: {...}
-
-🎉 Connection test successful! ComfyUI is ready to use.
-```
-
-
-### Available Video Workflows
-- **Thumbnail Generation**: Creates video thumbnails using AI
-- **Video Enhancement**: Improves video quality
-- **Custom Processing**: User-defined video workflows
 
 ## Contributing
 
-This is a demonstration project showing:
-- Mastra agent architecture
-- Ollama local LLM integration
-- MCP protocol implementation
-- AI-powered video asset management
-- ComfyUI workflow integration
-
-Feel free to extend it for your specific use cases!
-
-## License
-
-MIT License
+This project demonstrates Mastra's capabilities with real-world video processing workflows. Feel free to extend the agent with additional tools, memory processors, or integrations.
