@@ -39,7 +39,7 @@ class MuxMCPClient {
 
             this.transport = new StdioClientTransport({
                 command: "npx",
-                args: ["@mux/mcp", "--client=openai-agents","--tools=dynamic"],
+                args: ["@mux/mcp","--tools=dynamic"],
                 env: {
                     ...process.env,
                     MUX_TOKEN_ID: process.env.MUX_TOKEN_ID,
