@@ -76,7 +76,7 @@ class MuxMCPClient {
 
     async getTools(): Promise<Record<string, any>> {
         await this.ensureConnected();
-        
+
         if (!this.client) {
             throw new Error("Client not connected");
         }
@@ -113,7 +113,7 @@ class MuxMCPClient {
 
     async disconnect(): Promise<void> {
         this.connected = false;
-        
+
         if (this.transport) {
             try {
                 await this.transport.close();
@@ -122,7 +122,7 @@ class MuxMCPClient {
             }
             this.transport = null;
         }
-        
+
         this.client = null;
         console.log("🔌 Disconnected from Mux MCP server");
     }

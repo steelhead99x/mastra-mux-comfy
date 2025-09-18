@@ -1,8 +1,6 @@
 import dotenv from "dotenv";
 import { Mastra, Agent } from "@mastra/core";
-import { muxMcpClient } from "./mcp/mux-client";
 import { createOllamaModel } from "./models/ollama-model";
-import MuxAssetManager from "./agents/mux-asset-manager";
 import { InMemoryStore } from "@mastra/core/storage";
 
 // Load environment variables
@@ -29,25 +27,21 @@ Your capabilities include:
 - Analyzing video performance and engagement metrics
 - Generating comprehensive reports and insights
 - Troubleshooting asset processing issues
-- Optimizing video delivery and playback
+- Optimizing video delivery and playbook
 - Managing video views and error analytics
 
-Use the available Mux MCP tools to help users manage their video assets effectively. Always provide clear, actionable responses with specific data when available.`,
+Use the available tools to help users manage their video assets effectively. Always provide clear, actionable responses with specific data when available.`,
 
         model: createOllamaModel({
-            model: process.env.OLLAMA_MODEL || "llama3.2:3b",
+            model: process.env.OLLAMA_MODEL || "gpt-oss:20b",
             baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
             temperature: 0.7,
             maxTokens: 2048,
         }),
 
         tools: async () => {
-            try {
-                return await muxMcpClient.getTools();
-            } catch (error) {
-                console.warn("Failed to get MCP tools for agent:", error);
-                return {};
-            }
+            // Return empty tools for now - MCP integration will be added later
+            return {};
         },
     });
 }
@@ -71,18 +65,6 @@ export const agents = {
     muxAssetManager: muxAgentInstance,
 };
 
-// Expose MCP servers so Dev UI can list the server and its tools
-export const mcpServers = {
-    mux: {
-        command: "npx",
-        args: ["@mux/mcp"],
-        env: {
-            MUX_TOKEN_ID: process.env.MUX_TOKEN_ID ?? "",
-            MUX_TOKEN_SECRET: process.env.MUX_TOKEN_SECRET ?? "",
-        },
-    },
-};
-
 // Optional getAgents for APIs that call it
 export async function getAgents() {
     return agents;
@@ -99,129 +81,6 @@ if (!existingMastra) {
     globalThis.__mastra__ = mastra;
 }
 
-// Enhanced workflows with proper execution functions
-export const workflows = {
-    videoProcessingWorkflow: {
-        name: "Video Processing Pipeline",
-        description: "Complete video processing pipeline with Mux",
-        steps: [
-            "Upload video asset to Mux",
-            "Process and encode video",
-            "Generate thumbnails and previews",
-            "Extract metadata and analytics",
-            "Update asset status and notify completion",
-        ],
-        tools: ["list_assets", "get_asset", "create_asset"],
-        triggers: ["manual", "webhook", "api"],
-        execute: async (runtimeContext: any) => {
-            try {
-                const manager = new MuxAssetManager();
-                const result = await manager.generateAssetReport();
-                return {
-                    success: true,
-                    data: result.text,
-                    message: "Video processing workflow completed"
-                };
-            } catch (error) {
-                return {
-                    success: false,
-                    error: error instanceof Error ? error.message : String(error),
-                    message: "Video processing workflow failed"
-                };
-            }
-        }
-    },
-
-    assetManagementWorkflow: {
-        name: "Asset Management & Analytics",
-        description: "Comprehensive asset management with analytics and reporting",
-        steps: [
-            "List and categorize all assets",
-            "Generate comprehensive reports",
-            "Analyze viewing patterns and engagement",
-            "Identify optimization opportunities",
-            "Clean up unused or outdated assets",
-        ],
-        tools: ["list_assets", "list_data_video_views", "list_data_errors"],
-        triggers: ["scheduled", "manual", "storage_threshold"],
-        execute: async (runtimeContext: any) => {
-            try {
-                const manager = new MuxAssetManager();
-                const result = await manager.getAnalyticsSummary();
-                return {
-                    success: true,
-                    data: result.text,
-                    message: "Asset management workflow completed"
-                };
-            } catch (error) {
-                return {
-                    success: false,
-                    error: error instanceof Error ? error.message : String(error),
-                    message: "Asset management workflow failed"
-                };
-            }
-        }
-    },
-
-    mux_list_data_assets: {
-        name: "List Mux Data Assets",
-        description: "List available Mux video assets and basic metadata using MCP tools.",
-        steps: [
-            "Fetch asset list from Mux",
-            "Map essential fields (id, createdAt, status, duration, playbackId)",
-            "Return a concise summary for display",
-        ],
-        tools: ["list_assets"],
-        triggers: ["manual", "api"],
-        execute: async (runtimeContext: any) => {
-            try {
-                const manager = new MuxAssetManager();
-                const result = await manager.listAllAssets({ limit: 10, includeDetails: true });
-                return {
-                    success: true,
-                    data: result.text,
-                    message: "Successfully retrieved Mux assets"
-                };
-            } catch (error) {
-                return {
-                    success: false,
-                    error: error instanceof Error ? error.message : String(error),
-                    message: "Failed to retrieve Mux assets"
-                };
-            }
-        }
-    },
-
-    mux_list_assets: {
-        name: "List Mux Assets",
-        description: "Alias of mux_list_data_assets for Dev UI compatibility.",
-        steps: [
-            "Fetch asset list from Mux",
-            "Map essential fields (id, createdAt, status, duration, playbackId)",
-            "Return a concise summary for display",
-        ],
-        tools: ["list_assets"],
-        triggers: ["manual", "api"],
-        execute: async (runtimeContext: any) => {
-            try {
-                const manager = new MuxAssetManager();
-                const result = await manager.listAllAssets({ limit: 10, includeDetails: true });
-                return {
-                    success: true,
-                    data: result.text,
-                    message: "Successfully retrieved Mux assets"
-                };
-            } catch (error) {
-                return {
-                    success: false,
-                    error: error instanceof Error ? error.message : String(error),
-                    message: "Failed to retrieve Mux assets"
-                };
-            }
-        }
-    },
-};
-
 // Define proper return types to fix export issues
 interface OllamaConnectionResult {
     healthy: boolean;
@@ -232,16 +91,6 @@ interface OllamaConnectionResult {
 
 // Utilities (lazy work)
 export const utilities = {
-    async getMuxTools(): Promise<string[]> {
-        try {
-            const tools = await muxMcpClient.getTools();
-            return Object.keys(tools);
-        } catch (error) {
-            console.error("Failed to get Mux tools:", error);
-            return [];
-        }
-    },
-
     async testOllamaConnection(): Promise<OllamaConnectionResult> {
         try {
             const { OllamaProvider } = await import("./models/ollama-provider");
@@ -259,40 +108,6 @@ export const utilities = {
                 error: error instanceof Error ? error.message : String(error),
             };
         }
-    },
-
-    async getAssetSummary(): Promise<string> {
-        try {
-            const manager = new MuxAssetManager();
-            const report = await manager.generateAssetReport();
-            return report.text;
-        } catch (error) {
-            return `Failed to generate asset summary: ${error}`;
-        }
-    },
-};
-
-// Script runners (lazy imports)
-export const scriptRunners = {
-    async runAssetManagerTest() {
-        const { testAssetManager } = await import("./scripts/asset-cli");
-        return await testAssetManager();
-    },
-
-    async runMuxConnectionTest() {
-        const { MuxMCPTester } = await import("./scripts/test-mux");
-        const tester = new MuxMCPTester();
-        return await tester.runAllTests();
-    },
-
-    async runInteractiveDebugTools() {
-        const { interactiveTest } = await import("./scripts/test-debug-tools");
-        return await interactiveTest();
-    },
-
-    async runInteractiveMuxManager() {
-        const { enhancedInteractiveMuxManager } = await import("./scripts/test-mux-interactive");
-        return await enhancedInteractiveMuxManager();
     },
 };
 

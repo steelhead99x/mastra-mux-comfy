@@ -9,18 +9,8 @@
     "dev:alt": "tsx --esm src/mastra/index.ts",
     "build": "tsc",
     "start": "node dist/mastra/index.js",
-    "test:basic-agent": "tsx src/mastra/scripts/test-basic-agent.ts",
-    "test:simple": "tsx src/mastra/scripts/simple-test.ts",
-    "basic:interactive": "tsx src/mastra/scripts/basic-interactive.ts",
-    "test:tool-names": "tsx src/mastra/scripts/tool-name-test.ts",
-    "test:explicit": "tsx src/mastra/scripts/explicit-tool-test.ts",
-    "test:constrained": "tsx src/mastra/scripts/constrained-agent.ts",
-    "test:debug-explicit": "tsx src/mastra/scripts/debug-explicit-test.ts",
-    "test:ollama": "tsx src/mastra/scripts/simple-ollama-test.ts",
-    "test:non-streaming": "tsx src/mastra/scripts/non-streaming-test.ts",
-    "test:fixed-ollama": "tsx src/mastra/scripts/simple-ollama-test.ts",
-    "test:direct-tool": "tsx src/mastra/scripts/direct-tool-only-test.ts",
-    "test:minimal-agent": "tsx src/mastra/scripts/minimal-agent-test.ts"
+    "test:auth": "tsx src/mastra/scripts/test-mux-auth.ts",
+    "test:list": "tsx src/mastra/scripts/test-list-assets.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "latest",
