@@ -12,6 +12,7 @@
     "assets": "tsx src/mastra/scripts/asset-cli.ts",
     "assets:debug": "tsx src/mastra/scripts/asset-cli.ts debug",
     "assets:debug-tools": "tsx src/mastra/scripts/asset-cli.ts --debug-tools",
+    "test:asset-manager": "tsx src/mastra/scripts/test-mux-interactive.ts",
     "test:debug-tools": "tsx src/mastra/scripts/test-debug-tools.ts",
     "test:mux-mcp": "tsx src/mastra/scripts/test-mux.ts",
     "test:ollama": "tsx src/mastra/scripts/test-ollama.ts",
