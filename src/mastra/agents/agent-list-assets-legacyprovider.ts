@@ -5,7 +5,7 @@ import { muxMcpClient } from "../mcp/mux-client";
 // Explicitly load .env from project root
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-async function agentListAssets() {
+async function agentListAssetsLegacyprovider() {
     console.log("🤖 Agent: List Mux Assets");
     console.log("=========================");
 
@@ -89,7 +89,7 @@ async function agentListAssets() {
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-    agentListAssets().catch((error) => {
+    agentListAssetsLegacyprovider().catch((error) => {
         console.error("❌ Agent failed:", error);
         // Do not exit; keep process alive to allow further operations or debugging.
         console.log("\nℹ️ Agent encountered an error but will continue running. Press Ctrl+C to exit.");
@@ -97,4 +97,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     });
 }
 
-export { agentListAssets };
+export { agentListAssetsLegacyprovider };

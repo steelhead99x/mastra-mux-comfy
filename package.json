@@ -11,15 +11,16 @@
     "start": "node dist/mastra/index.js",
     "test:auth": "tsx src/mastra/scripts/test-mux-auth.ts",
     "test:list": "tsx src/mastra/scripts/test-list-assets.ts",
+    "test:vnext": "tsx src/mastra/scripts/ollama-vnext-demo.ts",
     "test:comfyClient": "tsx src/mastra/scripts/comfy-test.ts",
-    "agent:list": "tsx src/mastra/agents/agent-list-assets.ts"
+    "agent:list": "tsx src/mastra/agents/agent-list-assets-legacyprovider.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "latest",
+    "@ai-sdk/openai-compatible": "1.0.18",
     "@mastra/core": "latest",
     "@mastra/loggers": "latest",
     "@mastra/mcp": "latest",
-    "ai": "latest",
+    "ai": "5.0.46",
     "dotenv": "latest",
     "mastra": "latest",
     "ollama": "latest",

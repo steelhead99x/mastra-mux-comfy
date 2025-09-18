@@ -3,7 +3,7 @@ import { Mastra, Agent } from "@mastra/core";
 import { createOllamaModel } from "./models/ollama-model";
 import { InMemoryStore } from "@mastra/core/storage";
 // ... existing code ...
-import { agentListAssets } from "./agents/agent-list-assets";
+import { agentListAssetsLegacyprovider } from "./agents/agent-list-assets-legacyprovider";
 
 // Load environment variables
 dotenv.config();
@@ -147,7 +147,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
     // Run the list-assets agent if requested: `node dist/mastra/index.js --list-assets`
     if (args.includes("--list-assets")) {
-        agentListAssets().catch((err) => {
+        agentListAssetsLegacyprovider().catch((err) => {
             console.error("❌ agent-list-assets failed:", err);
             process.exit(1);
         });
