@@ -2,6 +2,8 @@ import dotenv from "dotenv";
 import { Mastra, Agent } from "@mastra/core";
 import { createOllamaModel } from "./models/ollama-model";
 import { InMemoryStore } from "@mastra/core/storage";
+// ... existing code ...
+import { agentListAssets } from "./agents/agent-list-assets";
 
 // Load environment variables
 dotenv.config();
@@ -136,3 +138,19 @@ export type { OllamaModelConfig } from "./models/ollama-model";
 
 // Default export
 export default mastra;
+
+// ---------------------------------------------
+// CLI helper: run the list-assets agent on demand
+// ---------------------------------------------
+if (import.meta.url === `file://${process.argv[1]}`) {
+    const args = process.argv.slice(2);
+
+    // Run the list-assets agent if requested: `node dist/mastra/index.js --list-assets`
+    if (args.includes("--list-assets")) {
+        agentListAssets().catch((err) => {
+            console.error("❌ agent-list-assets failed:", err);
+            process.exit(1);
+        });
+    }
+    // Otherwise, do nothing special; Mastra dev/serve will use the exports above.
+}

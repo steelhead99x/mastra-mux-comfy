@@ -25,6 +25,23 @@ interface ChatMessage {
     content: string;
 }
 
+function normalizeDateLike(value: any): string | undefined {
+    if (value == null) return undefined;
+    if (typeof value === 'string') return value;
+    if (typeof (value as any)?.toISOString === 'function') {
+        try { return (value as any).toISOString(); } catch {}
+    }
+    try {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) return d.toISOString();
+    } catch {}
+    try {
+        return String(value);
+    } catch {
+        return undefined;
+    }
+}
+
 export class OllamaProvider {
     private client: Ollama;
     private baseURL: string;
@@ -62,7 +79,7 @@ export class OllamaProvider {
                 name: model.name,
                 size: model.size,
                 digest: model.digest,
-                modified_at: model.modified_at.toISOString() // Convert Date to string
+                modified_at: normalizeDateLike(model.modified_at) || String(model.modified_at)
             }));
         } catch (error) {
             throw new Error(`Failed to list models: ${error instanceof Error ? error.message : String(error)}`);
@@ -81,7 +98,7 @@ export class OllamaProvider {
                 text: response.response || '',
                 response: response.response,
                 model: response.model,
-                created_at: response.created_at?.toISOString(), // Fix: Convert Date to string
+                created_at: normalizeDateLike(response.created_at),
                 done: response.done
             };
         } catch (error) {
@@ -101,7 +118,7 @@ export class OllamaProvider {
                 text: response.message?.content || '',
                 response: response.message?.content,
                 model: response.model,
-                created_at: response.created_at?.toISOString(), // Fix: Convert Date to string
+                created_at: normalizeDateLike(response.created_at),
                 done: response.done
             };
         } catch (error) {

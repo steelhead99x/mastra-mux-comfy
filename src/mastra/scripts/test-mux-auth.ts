@@ -77,7 +77,7 @@ async function testMuxAuthentication() {
 
     // Clean exit
     try {
-        await muxMcpClient.close?.();
+        await muxMcpClient.disconnect?.();
     } catch {
         // Ignore close errors
     }

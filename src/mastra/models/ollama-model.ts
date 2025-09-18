@@ -4,8 +4,8 @@ import path from "path";
 import { generateText } from "ai";
 import { OllamaProvider } from "../models/ollama-provider";
 
-import { openai } from "@ai-sdk/openai-compatible";
-import type { LanguageModelV1 } from "ai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import type { MastraLanguageModel } from "@mastra/core/dist/llm/model/shared.types";
 
 export interface OllamaModelConfig {
     model: string;
@@ -18,7 +18,7 @@ export interface OllamaModelConfig {
     presencePenalty?: number;
 }
 
-export function createOllamaModel(config: OllamaModelConfig): LanguageModelV1 {
+export function createOllamaModel(config: OllamaModelConfig): MastraLanguageModel {
     const {
         model,
         baseURL = "http://localhost:11434",
@@ -30,18 +30,15 @@ export function createOllamaModel(config: OllamaModelConfig): LanguageModelV1 {
         presencePenalty,
     } = config;
 
-    return openai(model, {
+    const provider = createOpenAICompatible({
         baseURL: `${baseURL}/v1`,
+        name: "ollama",
         apiKey: "ollama", // Ollama doesn't require a real API key
-        defaultQuery: {
-            temperature,
-            max_tokens: maxTokens,
-            top_p: topP,
-            top_k: topK,
-            frequency_penalty: frequencyPenalty,
-            presence_penalty: presencePenalty,
-        },
     });
+
+    // Note: per-request settings (temperature, maxTokens, etc.) can be passed
+    // in generateText/streamText calls. Provider-level defaults are not set here.
+    return provider.chatModel(model);
 }
 
 // Explicitly load .env from project root
