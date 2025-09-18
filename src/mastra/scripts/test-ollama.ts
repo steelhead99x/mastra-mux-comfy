@@ -15,9 +15,10 @@ async function testOllamaConnection() {
     try {
         // Health check
         console.log("\n1. Checking server health...");
-        const health = await checkOllamaHealth(baseUrl);
+        const provider = new OllamaProvider(baseUrl);
+        const health = await checkOllamaHealth(provider, model);
 
-        if (!health.isHealthy) {
+        if (!health.healthy) {
             console.error("❌ Ollama server is not healthy:", health.error);
             return;
         }
@@ -27,7 +28,6 @@ async function testOllamaConnection() {
 
         // Test generation
         console.log("\n2. Testing text generation...");
-        const provider = new OllamaProvider(baseUrl);
 
         const response = await provider.generate("Hello! Can you help me with video processing?", model);
         console.log("✅ Generation successful");

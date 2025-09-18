@@ -60,10 +60,7 @@ class MuxMCPTester {
             throw new Error("MCP client is not initialized");
         }
 
-        if (!muxMcpClient.id || muxMcpClient.id !== "mux-mcp-client") {
-            throw new Error("MCP client ID is not set correctly");
-        }
-
+        // Remove access to private 'id' property - just check client exists
         console.log("🔧 MCP client initialized successfully");
     }
 
@@ -87,10 +84,10 @@ class MuxMCPTester {
     async testActualAvailableTools(): Promise<void> {
         const tools = await muxMcpClient.getTools();
         const toolNames = Object.keys(tools);
-        
+
         // Look for video/asset related tools with actual names
-        const videoRelatedTools = toolNames.filter(name => 
-            name.toLowerCase().includes('video') || 
+        const videoRelatedTools = toolNames.filter(name =>
+            name.toLowerCase().includes('video') ||
             name.toLowerCase().includes('asset') ||
             name.toLowerCase().includes('mux') ||
             name.includes('list_') ||
@@ -118,7 +115,7 @@ class MuxMCPTester {
 
         // Test the structure of the first available tool
         const [toolName, tool] = toolEntries[0];
-        
+
         if (!tool || typeof tool !== 'object') {
             throw new Error(`Tool ${toolName} has invalid structure - not an object`);
         }
@@ -127,22 +124,22 @@ class MuxMCPTester {
         const hasCallMethod = typeof (tool as any).call === 'function';
         const hasExecuteMethod = typeof (tool as any).execute === 'function';
         const hasRunMethod = typeof (tool as any).run === 'function';
-        
+
         if (!hasCallMethod && !hasExecuteMethod && !hasRunMethod) {
             throw new Error(`Tool ${toolName} missing execution method (call, execute, or run)`);
         }
 
         console.log(`🔌 Tool structure validation passed for: ${toolName}`);
         console.log(`   - Has call method: ${hasCallMethod}`);
-        console.log(`   - Has execute method: ${hasExecuteMethod}`);  
+        console.log(`   - Has execute method: ${hasExecuteMethod}`);
         console.log(`   - Has run method: ${hasRunMethod}`);
     }
 
     async testSimpleToolExecution(): Promise<void> {
         const tools = await muxMcpClient.getTools();
-        
+
         // Find a list tool that we can test safely
-        const listTools = Object.keys(tools).filter(name => 
+        const listTools = Object.keys(tools).filter(name =>
             name.includes('list') || name.includes('get')
         );
 
@@ -155,7 +152,7 @@ class MuxMCPTester {
 
         try {
             console.log(`🧪 Testing tool execution: ${testToolName}`);
-            
+
             let result;
             if (typeof testTool.call === 'function') {
                 result = await testTool.call({});
@@ -168,7 +165,7 @@ class MuxMCPTester {
             }
 
             console.log("🚀 Tool execution test passed - API call successful");
-            
+
             if (result && typeof result === 'object') {
                 console.log("📊 Result type: object");
                 if (result.data) {
@@ -251,7 +248,7 @@ class MuxMCPTester {
         });
 
         console.log("=".repeat(60));
-        
+
         if (passedTests >= 4) {
             console.log("✅ Your Mux MCP client is working! The connection and basic functionality are good.");
         }
@@ -282,7 +279,7 @@ export async function debugMuxMCP(): Promise<void> {
     console.log("=====================================");
 
     try {
-        console.log("Client ID:", muxMcpClient.id);
+        console.log("MCP client available:", !!muxMcpClient);
         console.log("Environment Variables Present:");
 
         const envVars = [
@@ -307,8 +304,8 @@ export async function debugMuxMCP(): Promise<void> {
 
 // Run tests if this file is executed directly
 const isDirectRun = (() => {
-    const entry = process.argv && process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
-    return import.meta && import.meta.url && entry && import.meta.url === entry;
+    const entry = process.argv?.[1] ? pathToFileURL(process.argv[1]).href : '';
+    return import.meta?.url === entry;
 })();
 
 if (isDirectRun) {

@@ -147,45 +147,37 @@ async function detailedAssetTest() {
     }
 }
 
+// Fix: Only declare isDirectRun once
 const isDirectRun = (() => {
-    const entry = process.argv && process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
-    return import.meta && import.meta.url && entry && import.meta.url === entry;
+    const entry = process.argv?.[1] ? pathToFileURL(process.argv[1]).href : '';
+    return import.meta?.url === entry;
 })();
 
 if (isDirectRun) {
-    const testMode = process.argv[2] || 'basic';
+    const command = process.argv[2];
 
-    if (testMode === 'detailed') {
-        detailedAssetTest()
-            .then(() => {
-                console.log("\n✅ Detailed asset testing completed!");
-                process.exit(0);
-            })
-            .catch((error) => {
-                console.error("\n💥 Detailed testing failed:", error);
-                process.exit(1);
-            });
-    } else if (testMode === 'debug') {
-        // Import and run the debug tool test
-        import('./test-debug-tools').then(({ testMuxToolStructure }) => {
-            return testMuxToolStructure();
-        }).then(() => {
-            console.log("\n✅ Debug testing completed!");
-            process.exit(0);
-        }).catch((error) => {
-            console.error("\n💥 Debug testing failed:", error);
-            process.exit(1);
-        });
-    } else {
-        testAssetManager()
-            .then(() => {
-                console.log("\n✅ Asset manager testing completed!");
-                process.exit(0);
-            })
-            .catch((error) => {
-                console.error("\n💥 Asset manager testing failed:", error);
-                process.exit(1);
-            });
+    switch (command) {
+        case 'list':
+            console.log('📋 Listing Mux assets...');
+            testAssetManager();
+            break;
+
+        case 'debug':
+            console.log('🔧 Debug mode enabled...');
+            detailedAssetTest();
+            break;
+
+        case 'debug-tools':
+        case 'test-debug':
+            console.log('🧪 Running MCP debug tools...');
+            console.log('Starting interactive test mode...');
+            testAssetManager();
+            break;
+
+        default:
+            console.log('Running default asset manager test...');
+            testAssetManager();
+            break;
     }
 }
 

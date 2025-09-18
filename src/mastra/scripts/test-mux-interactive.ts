@@ -493,8 +493,8 @@ async function enhancedInteractiveMuxManager() {
 }
 
 const isDirectRun = (() => {
-    const entry = process.argv && process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
-    return import.meta && import.meta.url && entry && import.meta.url === entry;
+    const entry = process.argv?.[1] ? pathToFileURL(process.argv[1]).href : '';
+    return import.meta?.url === entry;
 })();
 
 if (isDirectRun) {

@@ -1,268 +1,294 @@
-import { Ollama } from 'ollama';
+import { Ollama, type GenerateResponse } from "ollama";
+
+export interface OllamaConfig {
+    baseURL?: string;
+    timeout?: number;
+    retries?: number;
+    debugLevel?: 'none' | 'minimal' | 'full';
+}
+
+export interface OllamaGenerateResult {
+    text: string;
+    finishReason?: string;
+    usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+    };
+    metadata?: {
+        response: string;
+        responseLength: number;
+        done: boolean;
+        context: number;
+        totalDuration?: number;
+        loadDuration?: number;
+        promptEvalCount: number;
+        evalCount: number;
+        evalDuration?: number;
+        error?: string;
+        stack?: string;
+    };
+}
+
+export interface HealthCheckResult {
+    healthy: boolean;
+    model?: string;
+    error?: string;
+    metadata?: {
+        modelLoaded: boolean;
+        evalTokens: number;
+        contextLength: number;
+    };
+}
 
 export class OllamaProvider {
-    private client: Ollama;
+    private ollama: Ollama;
     private debug: boolean;
+    private debugLevel: 'none' | 'minimal' | 'full';
+    private timeout: number;
+    private retries: number;
 
-    constructor(baseUrl: string = "http://192.168.88.16:11434") {
-        this.client = new Ollama({
-            host: baseUrl
+    constructor(baseURL?: string, config: OllamaConfig = {}) {
+        this.ollama = new Ollama({
+            host: baseURL || config.baseURL || "http://192.168.88.16:11434"
         });
-        this.debug = process.env.DEBUG === 'true';
+        this.debug = process.env.DEBUG === 'true' || false;
+        this.debugLevel = config.debugLevel || (process.env.DEBUG_LEVEL as 'none' | 'minimal' | 'full') || 'minimal';
+        this.timeout = config.timeout || 60000;
+        this.retries = config.retries || 3;
+
+        this.debugLog("Initialization", `Provider created with baseURL: ${baseURL || config.baseURL || "default"}`);
     }
 
     private debugLog(label: string, data: any) {
-        if (this.debug) {
-            console.log(`\n🔧 OLLAMA DEBUG - ${label}:`);
-            console.log('─'.repeat(30));
-            if (typeof data === 'object' && data !== null) {
-                console.log(JSON.stringify(data, null, 2));
-            } else {
-                console.log(data);
-            }
-            console.log('─'.repeat(30));
-        }
-    }
+        if (!this.debug || this.debugLevel === 'none') return;
 
-    private cleanDebugData(data: any): any {
-        if (!data || typeof data !== 'object') return data;
-
-        const cleaned = { ...data };
-
-        // Remove or truncate large arrays
-        if (cleaned.context && Array.isArray(cleaned.context)) {
-            cleaned.context = `[Array of ${cleaned.context.length} items - hidden]`;
-        }
-
-        if (cleaned.raw && cleaned.raw.context) {
-            cleaned.raw = { ...cleaned.raw };
-            cleaned.raw.context = `[Array of ${cleaned.raw.context.length} items - hidden]`;
-        }
-
-        // Truncate very long responses in debug
-        if (cleaned.response && typeof cleaned.response === 'string' && cleaned.response.length > 500) {
-            cleaned.response = cleaned.response.substring(0, 500) + '... [truncated for debug]';
-        }
-
-        if (cleaned.text && typeof cleaned.text === 'string' && cleaned.text.length > 500) {
-            cleaned.text = cleaned.text.substring(0, 500) + '... [truncated for debug]';
-        }
-
-        return cleaned;
-    }
-
-    async generate(prompt: string, model: string = "gpt-oss:20b", options: any = {}) {
+        console.log(`\n🔧 OLLAMA DEBUG - ${label}:`);
         try {
-            this.debugLog("Generate Request", {
-                model,
-                promptLength: prompt.length,
-                promptPreview: prompt.substring(0, 300) + (prompt.length > 300 ? '...' : ''),
-                options
-            });
+            if (this.debugLevel === 'full') {
+                console.log(typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+            } else {
+                // Minimal debug - just show key info
+                if (typeof data === 'object' && data !== null) {
+                    console.log(`[Object with ${Object.keys(data).length} keys]`);
+                } else {
+                    console.log(data);
+                }
+            }
+        } catch {
+            console.log(data);
+        }
+    }
 
-            const response = await this.client.generate({
+    async generate(prompt: string, model: string = "gpt-oss:20b", options: any = {}): Promise<OllamaGenerateResult> {
+        this.debugLog("Generate Request", { prompt: prompt.substring(0, 100) + "...", model, options });
+
+        try {
+            // Explicitly assert non-streaming response type to disambiguate overloads
+            const response = await this.ollama.generate({
                 model,
                 prompt,
                 stream: false,
-                format: options.format || undefined,
                 ...options
+            }) as unknown as GenerateResponse;
+
+            this.debugLog("Generate Response", {
+                hasResponse: !!response.response,
+                done: response.done
             });
 
-            this.debugLog("Raw Ollama Response", {
-                response: response.response,
-                responseLength: response.response?.length || 0,
-                done: response.done,
-                context: response.context?.length || 0,
-                totalDuration: response.total_duration,
-                loadDuration: response.load_duration,
-                promptEvalCount: response.prompt_eval_count,
-                evalCount: response.eval_count,
-                evalDuration: response.eval_duration
-            });
-
-            // Check if response is empty and try to understand why
+            // Handle empty or invalid responses with retry mechanism
             if (!response.response || response.response.trim() === '') {
-                this.debugLog("Empty Response Investigation", {
-                    promptTooLong: prompt.length > 4000,
-                    modelLoaded: response.prompt_eval_count > 0,
+                this.debugLog("Empty Response Detected", {
+                    modelLoaded: (response.prompt_eval_count || 0) > 0,
                     evalTokens: response.eval_count || 0,
                     contextLength: response.context?.length || 0
                 });
 
-                // If we got an empty response, try a simplified version
-                if (prompt.length > 2000) {
-                    console.log("⚠️  Long prompt detected, trying simplified version...");
-                    const simplifiedPrompt = `You are a helpful Mux video asset manager.
+                // Retry with simpler prompt
+                let retryAttempt = 0;
+                let retryResponse: GenerateResponse = response;
 
-User request: ${prompt.split('User request:')[1]?.trim() || prompt.substring(prompt.length - 500)}
+                while ((!retryResponse.response || retryResponse.response.trim() === '') && retryAttempt < this.retries) {
+                    retryAttempt++;
+                    this.debugLog("Retry Attempt", { attempt: retryAttempt, reason: "empty response" });
 
-Please provide a helpful response about video asset management.`;
+                    const retryPrompt = retryAttempt === 1
+                        ? `Please respond to: ${prompt.substring(0, 200)}`
+                        : `Answer briefly: ${prompt.substring(0, 100)}`;
 
-                    this.debugLog("Retrying with simplified prompt", {
-                        originalLength: prompt.length,
-                        simplifiedLength: simplifiedPrompt.length,
-                        simplifiedPrompt: simplifiedPrompt
-                    });
+                    try {
+                        retryResponse = await this.ollama.generate({
+                            model,
+                            prompt: retryPrompt,
+                            stream: false,
+                            // Fix: Use correct Ollama options format
+                            options: {
+                                temperature: 0.8,
+                                num_predict: 150  // Use num_predict instead of max_tokens
+                            }
+                        }) as unknown as GenerateResponse;
 
-                    const retryResponse = await this.client.generate({
-                        model,
-                        prompt: simplifiedPrompt,
-                        stream: false,
-                        ...options
-                    });
+                        this.debugLog("Retry Response", {
+                            hasResponse: !!retryResponse.response,
+                            attempt: retryAttempt
+                        });
 
-                    this.debugLog("Retry Response", {
-                        response: retryResponse.response,
-                        responseLength: retryResponse.response?.length || 0
-                    });
-
-                    if (retryResponse.response && retryResponse.response.trim() !== '') {
-                        return {
-                            text: retryResponse.response,
-                            finishReason: 'stop',
-                            usage: {
-                                promptTokens: retryResponse.prompt_eval_count || 0,
-                                completionTokens: retryResponse.eval_count || 0,
-                                totalTokens: (retryResponse.prompt_eval_count || 0) + (retryResponse.eval_count || 0)
-                            },
-                            raw: retryResponse
-                        };
+                        if (retryResponse.response && retryResponse.response.trim() !== '') {
+                            return {
+                                text: retryResponse.response,
+                                finishReason: "stop",
+                                usage: {
+                                    promptTokens: retryResponse.prompt_eval_count || 0,
+                                    completionTokens: retryResponse.eval_count || 0,
+                                    totalTokens: (retryResponse.prompt_eval_count || 0) + (retryResponse.eval_count || 0)
+                                }
+                            };
+                        }
+                    } catch (retryError) {
+                        this.debugLog("Retry Failed", {
+                            attempt: retryAttempt,
+                            error: retryError instanceof Error ? retryError.message : String(retryError)
+                        });
                     }
                 }
             }
 
-            const result = {
-                text: response.response || '',
-                finishReason: 'stop',
-                usage: {
-                    promptTokens: response.prompt_eval_count || 0,
-                    completionTokens: response.eval_count || 0,
-                    totalTokens: (response.prompt_eval_count || 0) + (response.eval_count || 0)
-                },
-                // Don't include raw response in production to avoid huge context arrays
-                ...(this.debug ? {} : {})
-            };
-
-            this.debugLog("Final Response", {
-                textLength: result.text?.length || 0,
-                finishReason: result.finishReason,
-                usage: result.usage
-                // Exclude the actual text and raw data from debug output
-            });
-
-            return result;
-        } catch (error) {
-            console.error('Ollama generation error:', error);
-            this.debugLog("Generation Error", {
-                error: error.message,
-                stack: error.stack
-            });
-            throw error;
-        }
-    }
-
-    async generateWithTools(prompt: string, tools: any[] = [], model: string = "gpt-oss:20b") {
-        // For models that don't support native tool calling, we need to format the prompt differently
-        const systemPrompt = `You are a helpful assistant. When you need to use tools, respond with ONLY valid JSON in this format:
-{
-  "action": "tool_call",
-  "tool": "tool_name",
-  "arguments": {...}
-}
-
-Available tools:
-${tools.map(t => `- ${t.name}: ${t.description}`).join('\n')}
-
-User request: ${prompt}
-
-If you don't need tools, respond normally. If you need tools, respond with ONLY the JSON format above.`;
-
-        this.debugLog("Generate With Tools Request", {
-            model,
-            toolCount: tools.length,
-            tools: tools.map(t => t.name),
-            systemPromptLength: systemPrompt.length
-        });
-
-        try {
-            const response = await this.client.generate({
-                model,
-                prompt: systemPrompt,
-                stream: false,
-                format: 'json' // Try to force JSON format
-            });
-
-            this.debugLog("Tools Response (JSON format)", {
-                response: response.response,
-                responseLength: response.response?.length || 0
-            });
-
             return {
                 text: response.response || '',
-                finishReason: 'stop',
+                finishReason: "stop",
                 usage: {
                     promptTokens: response.prompt_eval_count || 0,
                     completionTokens: response.eval_count || 0,
                     totalTokens: (response.prompt_eval_count || 0) + (response.eval_count || 0)
-                },
-                raw: response
+                }
             };
+
         } catch (error) {
-            // Fallback to regular generation if JSON format fails
-            console.warn('JSON format failed, falling back to regular generation');
-            this.debugLog("JSON Format Failed", error);
-            return await this.generate(prompt, model);
+            this.debugLog("Generate Error", error);
+
+            // Provide structured error response with fixed metadata
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            return {
+                text: `Error: ${errorMessage}`,
+                finishReason: "error",
+                usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+                metadata: {
+                    response: '',
+                    responseLength: 0,
+                    done: false,
+                    context: 0,
+                    promptEvalCount: 0,
+                    evalCount: 0,
+                    error: errorMessage,
+                    stack: errorStack
+                }
+            };
         }
     }
 
-    async chat(messages: Array<{ role: string; content: string }>, model: string = "gpt-oss:20b") {
-        this.debugLog("Chat Request", {
-            model,
-            messageCount: messages.length,
-            messages: messages.map(m => ({ role: m.role, contentLength: m.content.length }))
-        });
+    async *generateStream(prompt: string, model: string = "gpt-oss:20b", options: any = {}): AsyncIterator<string> {
+        this.debugLog("Generate Stream Request", { prompt: prompt.substring(0, 100) + "...", model });
 
-        const response = await this.client.chat({
-            model,
-            messages: messages.map(msg => ({
-                role: msg.role as 'user' | 'assistant' | 'system',
-                content: msg.content
-            })),
-            stream: false
-        });
-
-        this.debugLog("Chat Response", {
-            content: response.message.content,
-            contentLength: response.message.content?.length || 0,
-            role: response.message.role
-        });
-
-        return {
-            text: response.message.content || '',
-            finishReason: 'stop',
-            usage: {
-                promptTokens: response.prompt_eval_count || 0,
-                completionTokens: response.eval_count || 0,
-                totalTokens: (response.prompt_eval_count || 0) + (response.eval_count || 0)
-            },
-            raw: response
-        };
-    }
-
-    async listModels() {
-        const models = await this.client.list();
-        this.debugLog("Available Models", models.models.map(m => ({ name: m.name, size: m.size, modified_at: m.modified_at })));
-        return models.models;
-    }
-
-    async checkHealth() {
         try {
-            await this.listModels();
-            this.debugLog("Health Check", "PASSED");
+            const stream = await this.ollama.generate({
+                model,
+                prompt,
+                stream: true,
+                ...options
+            });
+
+            for await (const chunk of stream) {
+                if (chunk.response) {
+                    yield chunk.response;
+                }
+            }
+
+        } catch (error) {
+            this.debugLog("Generate Stream Error", error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            yield `Error: ${errorMessage}`;
+        }
+    }
+
+    async healthCheck(model: string = "gpt-oss:20b"): Promise<HealthCheckResult> {
+        try {
+            this.debugLog("Health Check", `Testing model: ${model}`);
+
+            const response = await this.ollama.generate({
+                model,
+                prompt: "Hello",
+                stream: false,
+                // Fix: Use correct Ollama options format
+                options: { num_predict: 5 }  // Use num_predict instead of max_tokens
+            }) as unknown as GenerateResponse;
+
+            const healthy = !!(response.response && response.response.trim());
+
+            this.debugLog("Health Check", healthy ? "PASSED" : "FAILED");
+
+            return {
+                healthy,
+                model,
+                metadata: {
+                    modelLoaded: (response.prompt_eval_count || 0) > 0,
+                    evalTokens: response.eval_count || 0,
+                    contextLength: response.context?.length || 0
+                }
+            };
+
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.debugLog("Health Check", "FAILED: " + errorMessage);
+            return {
+                healthy: false,
+                model,
+                error: errorMessage
+            };
+        }
+    }
+
+    async listModels(): Promise<Array<{name: string, size: number, modified_at: string}>> {
+        try {
+            const response = await this.ollama.list();
+            const models = response.models || [];
+            return models.map(m => ({
+                name: m.name,
+                size: m.size,
+                modified_at: (m.modified_at instanceof Date) ? m.modified_at.toISOString() : String(m.modified_at)
+            }));
+        } catch (error) {
+            this.debugLog("List Models Error", error);
+            return [];
+        }
+    }
+
+    async pullModel(model: string): Promise<boolean> {
+        try {
+            this.debugLog("Pulling Model", model);
+            await this.ollama.pull({ model, stream: false });
             return true;
         } catch (error) {
-            this.debugLog("Health Check", "FAILED: " + error.message);
+            this.debugLog("Pull Model Error", error);
             return false;
         }
+    }
+
+    async showModel(model: string): Promise<any> {
+        try {
+            return await this.ollama.show({ model });
+        } catch (error) {
+            this.debugLog("Show Model Error", error);
+            return null;
+        }
+    }
+
+    // Add missing chat method that was referenced in test-debug-tools
+    async chat(messages: Array<{role: string, content: string}>, model: string = "gpt-oss:20b"): Promise<OllamaGenerateResult> {
+        // Convert chat format to simple prompt for Ollama
+        const prompt = messages.map(m => `${m.role}: ${m.content}`).join('\n') + '\nassistant:';
+        return this.generate(prompt, model);
     }
 }

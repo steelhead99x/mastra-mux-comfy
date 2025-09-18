@@ -1,4 +1,3 @@
-
 import { MuxAssetManager } from "../agents/mux-asset-manager";
 import dotenv from "dotenv";
 import readline from "readline";
@@ -92,11 +91,11 @@ async function interactiveTest() {
                 model: process.env.OLLAMA_MODEL
             });
 
-            // Test basic health
-            const health = await ollama.checkHealth();
+            // Fix: Use healthCheck instead of checkHealth
+            const health = await ollama.healthCheck();
             debugLog("Ollama health check", health);
 
-            // Test available models
+            // Fix: Use correct return type for listModels
             const models = await ollama.listModels();
             debugLog("Available models", models.map(m => m.name));
 
@@ -203,7 +202,7 @@ async function interactiveTest() {
                                 template: showResult.template
                             });
                         } catch (showError) {
-                            console.log("⚠️  Could not get model info:", showError.message);
+                            console.log("⚠️  Could not get model info:", showError instanceof Error ? showError.message : String(showError));
                             // Try to list available models
                             try {
                                 const { Ollama } = await import("ollama");
@@ -211,7 +210,7 @@ async function interactiveTest() {
                                 const listResult = await client.list();
                                 console.log("Available models:", listResult.models.map(m => m.name));
                             } catch (listError) {
-                                console.log("❌ Could not list models:", listError.message);
+                                console.log("❌ Could not list models:", listError instanceof Error ? listError.message : String(listError));
                             }
                         }
 
@@ -379,24 +378,25 @@ async function interactiveTest() {
         } catch (error) {
             console.error("❌ Error:", error);
 
-            // Debug: Show full error details
-            if (DEBUG) {
-                console.log("\n🔧 DEBUG - Error Details:");
-                console.log(`- Error type: ${error?.constructor?.name || 'Unknown'}`);
-                console.log(`- Error message: ${error?.message || 'No message'}`);
-                if (error instanceof Error && error.stack) {
-                    console.log(`- Stack trace:`);
-                    console.log(error.stack);
-                }
-                debugLog("Full Error Object", error);
+            // Fix error message access
+            if (typeof error === 'object' && error !== null) {
+                console.log(`- Error details:`);
+                console.log(`- Error type: ${error.constructor?.name || 'Unknown'}`);
+                console.log(`- Error message: ${(error as any).message || 'No message'}`);
+                if ((error as any).code) console.log(`- Error code: ${(error as any).code}`);
+                if ((error as any).errno) console.log(`- Error errno: ${(error as any).errno}`);
             }
         }
     }
 }
 
+// Export the interactiveTest function so it can be imported by other modules
+export { interactiveTest };
+
+// Fix the direct-run check
 const isDirectRun = (() => {
-    const entry = process.argv && process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
-    return import.meta && import.meta.url && entry && import.meta.url === entry;
+    const entry = process.argv?.[1] ? pathToFileURL(process.argv[1]).href : '';
+    return import.meta?.url === entry;
 })();
 
 if (isDirectRun) {
