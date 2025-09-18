@@ -1,17 +1,40 @@
 // TypeScript
 import { Agent } from "@mastra/core";
 import { Memory } from "@mastra/memory";
-import { LibSQLStore } from "@mastra/libsql";
+import { LibSQLStore, LibSQLVector } from "@mastra/libsql";
 import { ollamaModel } from "../models/ollama-vnext";
 import { muxMcpClient } from "../mcp/mux-client";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
 console.log("Creating interactive agent...");
+
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
+
+// Create Ollama provider for embeddings
+const ollamaProvider = createOpenAICompatible({
+  name: "ollama",
+  baseURL: OLLAMA_BASE_URL,
+});
 
 // Create memory for the agent to store conversation context
 const agentMemory = new Memory({
   storage: new LibSQLStore({
     url: "file:./agent-memory.db", // Local SQLite file for memory storage
   }),
+  vector: new LibSQLVector({
+    connectionUrl: "file:./agent-memory.db", // Use the same database for vector storage
+  }),
+  embedder: ollamaProvider.textEmbeddingModel("gemma:300m"), // Use Ollama's gemma embedding model
+  options: {
+    workingMemory: {
+      enabled: true,
+    },
+    semanticRecall: {
+      topK: 3,
+      messageRange: 2,
+      scope: 'thread',
+    },
+  },
 });
 
 /**
@@ -22,7 +45,7 @@ export const interactiveAgent = new Agent({
   name: "interactive",
   instructions: "Interactive terminal agent using Ollama (gpt-oss:20b). You have memory of our conversation history. It can call Mux MCP tools (up to 10 summarized on startup). Ask about listing/searching assets, statuses, and reports. Avoid repeating yourself by referencing previous messages in our conversation.",
   model: ollamaModel,
-  memory: agentMemory, // Add memory to prevent repetition
+  memory: agentMemory,
   tools: async () => {
     try {
       console.log("Loading tools for interactive agent...");
