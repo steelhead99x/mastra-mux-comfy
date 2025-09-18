@@ -27,7 +27,8 @@ async function agentListAssets() {
         console.log("MUX_TOKEN_ID=your_token_id");
         console.log("MUX_TOKEN_SECRET=your_token_secret");
         console.log("\nMake sure the .env file is in the project root directory.");
-        process.exit(1);
+        // Removed process.exit to allow the process to continue running.
+        return;
     }
 
     // 2) Test MCP connection and list assets
@@ -81,21 +82,18 @@ async function agentListAssets() {
 
     console.log("\n4. Agent run complete");
 
-    // Clean exit
-    try {
-        await muxMcpClient.disconnect();
-    } catch {
-        // Ignore close errors
-    }
-
-    process.exit(success ? 0 : 1);
+    // Keep the agent/process alive after listing. Do not disconnect or exit here.
+    console.log("\nℹ️ Agent is still running. Press Ctrl+C to exit.");
+    process.stdin.resume();
 }
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
     agentListAssets().catch((error) => {
         console.error("❌ Agent failed:", error);
-        process.exit(1);
+        // Do not exit; keep process alive to allow further operations or debugging.
+        console.log("\nℹ️ Agent encountered an error but will continue running. Press Ctrl+C to exit.");
+        process.stdin.resume();
     });
 }
 
