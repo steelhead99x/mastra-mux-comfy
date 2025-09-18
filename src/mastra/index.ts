@@ -60,7 +60,6 @@ if (!existingAgent) {
 // Agents visible in the Dev UI
 export const agents = {
     muxAssetManager: muxAgentInstance,
-    "mux-asset-manager": muxAgentInstance,
 };
 
 // Create the Mastra instance (singleton) AFTER defining agents so Playground can discover them
