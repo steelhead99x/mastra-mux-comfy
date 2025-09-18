@@ -13,14 +13,8 @@ export default {
             trigger: "manual"
         }
     },
-    agents: {
-        videoProcessingAgent: {
-            description: "AI agent for video processing operations"
-        },
-        aiVideoProcessingAgent: {
-            description: "Advanced AI agent with Mux and ComfyUI integration"
-        }
-    },
+    // Note: Do not define plain objects under agents here unless they are actual Mastra Agent instances.
+    // Leaving agents undefined allows constructing Mastra with this config safely across versions.
     integrations: {
         mux: {
             type: "mcp",

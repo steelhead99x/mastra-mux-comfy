@@ -1,14 +1,19 @@
 // Ensure telemetry instrumentation is loaded before Mastra
 import "./instrumentation";
 import { Mastra } from "@mastra/core";
+import mastraConfig from "../../mastra.config";
 import { createMuxAssetManagerAgent } from "./agents/mux-asset-manager";
 
-// Create Mastra instance with minimal config to avoid registering non-agent config objects
-const mastra = new Mastra({
-    agents: {},
-    workflows: {},
-    tools: []
-} as any);
+// Create Mastra instance using a sanitized config to avoid registering plain objects as agents/workflows
+const sanitizedConfig = (() => {
+    const cfg: any = { ...mastraConfig };
+    // Remove sections that may contain plain objects instead of Mastra instances
+    if (cfg.agents) delete cfg.agents;
+    if (cfg.workflows) delete cfg.workflows;
+    if (cfg.legacy_workflows) delete cfg.legacy_workflows;
+    return cfg;
+})();
+const mastra = new Mastra(sanitizedConfig as any);
 
 // Export async function to initialize agent with tools
 export async function initializeMuxAssetManager() {
@@ -90,6 +95,15 @@ async function startServer() {
   </div>
 
   <div class="card">
+    <h2>Get the full Mastra Dev UI</h2>
+    <ol>
+      <li>Ensure you are on a version of <code>@mastra/core</code> that exposes <code>mastra.serve()</code>.</li>
+      <li>If available, this app will automatically launch the full UI instead of this fallback.</li>
+      <li>Alternatively, use the Mastra Dev Server (CLI): <code>npx mastra@latest dev</code> in a project configured with Mastra.</li>
+    </ol>
+  </div>
+
+  <div class="card">
     <h2>CLI commands</h2>
     <p>From your terminal:</p>
     <ul>
@@ -99,7 +113,7 @@ async function startServer() {
     </ul>
   </div>
 
-  <p class="small">This fallback UI is shown because the current @mastra/core version doesn’t expose a built-in serve() method. When you upgrade to a version with server support, this page will be replaced automatically.</p>
+  <p class="small">This fallback UI appears because the current <code>@mastra/core</code> in node_modules does not provide a built-in server. When you upgrade to a version with server support, this page will be replaced automatically and your mastra.config.ts will populate the UI.</p>
 </body>
 </html>`);
             });
