@@ -89,6 +89,41 @@ Be conversational, helpful, and leverage your tools effectively. Reference previ
 
 console.log("✅ Anthropic dynamic agent created successfully:", anthropicDynamicAgent.name);
 
+// Add a small retry helper for transient provider errors (e.g., "Overloaded")
+async function withRetries<T>(
+  fn: () => Promise<T>,
+  opts: { retries?: number; baseDelayMs?: number } = {}
+): Promise<T> {
+  const retries = opts.retries ?? 3;
+  const baseDelayMs = opts.baseDelayMs ?? 600;
+
+  let attempt = 0;
+  let lastErr: unknown;
+
+  while (attempt <= retries) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastErr = err;
+      const msg = String(err?.message ?? err ?? "");
+      const isTransient =
+        /overloaded|rate limit|429|503|temporar(il)?y unavailable|server busy/i.test(msg);
+
+      if (!isTransient || attempt === retries) {
+        throw err;
+      }
+
+      const delay = Math.round(baseDelayMs * Math.pow(2, attempt) + Math.random() * 200);
+      console.warn(`⚠️ Transient error (${msg}). Retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+      await new Promise((r) => setTimeout(r, delay));
+      attempt++;
+    }
+  }
+
+  // Should not reach here
+  throw lastErr;
+}
+
 /**
  * Interactive runner for the Anthropic dynamic agent
  * Provides both agent mode and direct Claude mode
@@ -207,11 +242,13 @@ export async function runAnthropicDynamicAgent(): Promise<void> {
                     // Direct Claude mode without tools or memory
                     console.log("🔧 Using direct Claude mode...");
 
-                    const result = await anthropicGenerateText(userInput, {
-                        temperature: 0.1,
-                        maxTokens: 4096,
-                        system: "You are Claude, an AI assistant created by Anthropic. Be helpful, harmless, and honest."
-                    });
+                    const result = await withRetries(() =>
+                        anthropicGenerateText(userInput, {
+                            temperature: 0.1,
+                            maxTokens: 4096,
+                            system: "You are Claude, an AI assistant created by Anthropic. Be helpful, harmless, and honest."
+                        })
+                    );
 
                     console.log("\n📝 Claude Response:");
                     console.log(result.text);
@@ -220,8 +257,10 @@ export async function runAnthropicDynamicAgent(): Promise<void> {
                     // Full agent mode with tools and memory
                     console.log("🎬 Using Anthropic Agent with tools and memory...");
 
-                    const response = await anthropicDynamicAgent.generateVNext(
-                        [{ role: "user", content: userInput }]
+                    const response = await withRetries(() =>
+                        anthropicDynamicAgent.generateVNext(
+                            [{ role: "user", content: userInput }]
+                        )
                     );
 
                     console.log("\n📝 Agent Response:");
