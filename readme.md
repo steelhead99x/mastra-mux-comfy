@@ -1,21 +1,23 @@
-# Mastra Mux ComfyUI Workflow
+# Mastra Mux MCP Multi-Model Workflow
 
-A comprehensive video processing solution built with Mastra framework, featuring an interactive AI agent powered by Ollama that can manage Mux video assets through MCP (Model Context Protocol) integration.
+A comprehensive video processing solution built with Mastra framework, featuring interactive AI agents powered by multiple LLMs (Ollama & Anthropic Claude) that can manage Mux video assets through MCP (Model Context Protocol) integration.
 
 ## Features
 
-- 🤖 **Interactive AI Agent** - Ollama-powered agent with conversation memory
+- 🤖 **Multi-Model AI Agents** - Support for both Ollama and Anthropic Claude
 - 🎥 **Mux Integration** - Full MCP integration for video asset management
 - 🧠 **Persistent Memory** - SQLite-based conversation history storage
-- 🛠️ **Development Tools** - Comprehensive test scripts and utilities
+- 🛠️ **Dynamic Tool Loading** - Real-time MCP tool discovery and integration
 - 📊 **Dev UI** - Built-in Mastra development interface
+- 🔧 **Comprehensive Testing** - Test suites for all integrations
 
 ## Prerequisites
 
 - Node.js 18+
-- [Ollama](https://ollama.ai) installed and running locally
+- [Anthropic API Key](https://console.anthropic.com/) for Claude integration
+- [Ollama](https://ollama.ai) installed and running locally (for embeddings)
 - Mux account with API credentials
-- Ollama model: `gpt-oss:20b` (or configure your preferred model)
+- Ollama model: `embeddinggemma:300m` (for embeddings)
 
 ## Setup
 

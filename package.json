@@ -13,9 +13,12 @@
     "test:list": "tsx src/mastra/scripts/test-list-assets.ts",
     "test:vnext": "tsx src/mastra/scripts/ollama-vnext-demo.ts",
     "test:comfyClient": "tsx src/mastra/scripts/comfy-test.ts",
-    "agent:list": "tsx src/mastra/agents/agent-list-assets-legacyprovider.ts"
+    "agent:list": "tsx src/mastra/agents/agent-list-assets-legacyprovider.ts",
+    "agent:anthropic": "tsx src/mastra/agents/anthropic-dynamic-agent.ts",
+    "test:anthropic": "tsx src/mastra/scripts/test-anthropic-agent.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.17",
     "@ai-sdk/openai-compatible": "latest",
     "@mastra/core": "latest",
     "@mastra/libsql": "latest",
@@ -43,7 +46,8 @@
     "processing",
     "ai",
     "mcp",
-    "ollama"
+    "ollama",
+    "anthropic"
   ],
   "author": "",
   "license": "MIT"
