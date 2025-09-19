@@ -3,7 +3,7 @@ import { Agent } from "@mastra/core";
 import { Memory } from "@mastra/memory";
 import { LibSQLStore, LibSQLVector } from "@mastra/libsql";
 import { ollamaModel, ollamaGenerateText, ollamaChat } from "../models/ollama-vnext";
-import { muxMcpClient } from "../mcp/mux-client";
+import { muxMcpClient } from "../mcp/mux-client-data";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import readline from "readline";
 
@@ -44,7 +44,7 @@ const agentMemory = new Memory({
  * This will appear in the Agents section of the dev server.
  */
 export const interactiveAgent = new Agent({
-  name: "ollama-mux-interactive",
+    name: "ollama-mux-interactive-errors", // Changed from "ollama-mux-interactive"
   instructions: "Interactive terminal agent using Ollama (gpt-oss:20b). You have memory of our conversation history. It can call Mux MCP tools (up to 10 summarized on startup). Ask about listing/searching assets, statuses, and reports. Avoid repeating yourself by referencing previous messages in our conversation.",
   model: ollamaModel,
   memory: agentMemory,
@@ -162,28 +162,27 @@ export async function runInteractiveAgent(): Promise<void> {
           }
           
         } else {
-            // Regular Mastra Agent mode - only use supported parameters
-            console.log("🤖 Processing with Mastra Agent...");
-
-            const response = await interactiveAgent.generate(
-                [{ role: "user", content: userInput }],
-                {
-                    temperature: 0.3, // Lower temperature to reduce repetition
-                    // Note: Mastra Agent only supports basic parameters
-                    // Advanced repetition control is only available in direct ollama-vnext mode
-                }
-            );
-
-            console.log("📝 Response:", response.text);
-
-            // Log any tool usage if available
-            if (response.toolCalls && response.toolCalls.length > 0) {
-                console.log("🛠️  Tools used:", response.toolCalls.map(call => call.toolName).join(', '));
+          // Regular Mastra Agent mode - use only supported parameters
+          console.log("🤖 Processing with Mastra Agent...");
+          
+          const response = await interactiveAgent.generate(
+            [{ role: "user", content: userInput }],
+            {
+              temperature: 0.3, // Lower temperature to reduce repetition
+              // Note: Mastra Agent doesn't support the enhanced parameters directly
+              // Those are only available in direct ollama-vnext calls
             }
+          );
+
+          console.log("📝 Response:", response.text);
+          
+          // Log any tool usage if available
+          if (response.toolCalls && response.toolCalls.length > 0) {
+            console.log("🛠️  Tools used:", response.toolCalls.map(call => call.toolName).join(", "));
+          }
         }
 
-
-    } catch (error) {
+      } catch (error) {
         console.error("❌ Error processing message:", error);
       }
     }

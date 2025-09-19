@@ -32,8 +32,8 @@ class MuxMCPClient {
         }
 
         // Parse MCP args from environment variable
-        const mcpArgs = process.env.MUX_MCP_INTERACTIVE_ARGS
-            ? process.env.MUX_MCP_INTERACTIVE_ARGS.split(',').map(arg => arg.trim())
+        const mcpArgs = process.env.MUX_MCP_DATA_ARGS
+            ? process.env.MUX_MCP_DATA_ARGS.split(',').map(arg => arg.trim())
             : ["@mux/mcp", "client=openai-agents", "--tools=dynamic", "--resource=video.assets"];
 
         this.connecting = true;

@@ -2,13 +2,22 @@
 import { generateText, streamText } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
+/**
+ * Enhanced configuration options for ollama-vnext with better repetition control
+ */
 export interface VNextOptions {
     temperature?: number;
     topP?: number;
+    topK?: number;
+    repeatPenalty?: number;
+    frequencyPenalty?: number;
+    presencePenalty?: number;
+    maxTokens?: number;
+    maxSteps?: number;
     tools?: Record<string, any>;
     toolChoice?: "auto" | "none" | "required";
-    maxSteps?: number;
-    // extend with other controls as needed
+    seed?: number;
+    stop?: string[];
 }
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
@@ -38,13 +47,20 @@ export async function ollamaGenerateText(
     finishReason?: string;
     usage?: any;
 }> {
-    // Only include supported parameters
+    // Enhanced parameters for better repetition control
     const generateParams: any = {
         model: ollamaModel,
         prompt,
-        temperature: options.temperature,
-        topP: options.topP,
+        temperature: options.temperature ?? 0.7,
+        topP: options.topP ?? 0.9,
+        topK: options.topK,
+        repeatPenalty: options.repeatPenalty ?? 1.1,
+        frequencyPenalty: options.frequencyPenalty ?? 0.1,
+        presencePenalty: options.presencePenalty ?? 0.1,
+        maxTokens: options.maxTokens ?? 8192, // gpt-oss:20b supports up to 32k context, 8k generation is safe
         maxSteps: options.maxSteps ?? (options.tools ? 5 : undefined),
+        seed: options.seed,
+        stop: options.stop,
     };
 
     // Add tool parameters only if tools are provided
@@ -123,16 +139,23 @@ export async function ollamaChat(
     finishReason?: string;
     usage?: any;
 }> {
-    // Only include supported parameters
+    // Enhanced parameters for better repetition control
     const chatParams: any = {
         model: ollamaModel,
         messages: messages.map(msg => ({
             role: msg.role,
             content: msg.content
         })),
-        temperature: options.temperature,
-        topP: options.topP,
+        temperature: options.temperature ?? 0.7,
+        topP: options.topP ?? 0.9,
+        topK: options.topK,
+        repeatPenalty: options.repeatPenalty ?? 1.1,
+        frequencyPenalty: options.frequencyPenalty ?? 0.1,
+        presencePenalty: options.presencePenalty ?? 0.1,
+        maxTokens: options.maxTokens ?? 8192, // gpt-oss:20b supports up to 32k context, 8k generation is safe
         maxSteps: options.maxSteps ?? (options.tools ? 5 : undefined),
+        seed: options.seed,
+        stop: options.stop,
     };
 
     // Add tool parameters only if tools are provided

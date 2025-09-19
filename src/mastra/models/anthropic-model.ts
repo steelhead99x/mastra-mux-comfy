@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const DEFAULT_MODEL = process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022";
+const DEFAULT_MODEL = process.env.ANTHROPIC_MODEL || "claude-3-7-sonnet-20250219";
 
 if (!ANTHROPIC_API_KEY) {
     console.warn("⚠️ ANTHROPIC_API_KEY not found in environment variables");
