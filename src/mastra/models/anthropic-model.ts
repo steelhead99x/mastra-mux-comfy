@@ -7,13 +7,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+// Use Claude 3.7 Sonnet which is compatible with Mastra's current generate method
 const DEFAULT_MODEL = process.env.ANTHROPIC_MODEL || "claude-3-7-sonnet-20250219";
 
 if (!ANTHROPIC_API_KEY) {
     console.warn("⚠️ ANTHROPIC_API_KEY not found in environment variables");
 }
 
-// Create Anthropic model instance
+// Create Anthropic model instance with V1 compatible model
 export const anthropicModel = anthropic(DEFAULT_MODEL);
 
 /**

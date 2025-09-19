@@ -6,14 +6,13 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_OPTIONS='--import tsx/esm' mastra dev",
-    "dev:alt": "tsx --esm src/mastra/index.ts",
     "build": "tsc",
     "start": "node dist/mastra/index.js",
     "test:auth": "tsx src/mastra/scripts/test-mux-auth.ts",
-    "test:list": "tsx src/mastra/scripts/test-list-assets.ts",
+    "test:assets": "tsx src/mastra/scripts/test-list-assets.ts",
+    "test:assets:all": "tsx src/mastra/scripts/test-list-assets.ts all",
     "test:vnext": "tsx src/mastra/scripts/ollama-vnext-demo.ts",
     "test:comfyClient": "tsx src/mastra/scripts/comfy-test.ts",
-    "agent:list": "tsx src/mastra/agents/agent-list-assets-legacyprovider.ts",
     "agent:anthropic": "tsx src/mastra/agents/anthropic-dynamic-agent.ts",
     "test:anthropic": "tsx src/mastra/scripts/test-anthropic-agent.ts"
   },

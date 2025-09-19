@@ -220,7 +220,7 @@ export async function runAnthropicDynamicAgent(): Promise<void> {
                     // Full agent mode with tools and memory
                     console.log("🎬 Using Anthropic Agent with tools and memory...");
 
-                    const response = await anthropicDynamicAgent.generate(
+                    const response = await anthropicDynamicAgent.generateVNext(
                         [{ role: "user", content: userInput }],
                         {
                             temperature: 0.1,

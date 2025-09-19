@@ -1,22 +1,22 @@
 // TypeScript
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import dotenv from "dotenv";
 import { z } from "zod";
 import { createTool } from "@mastra/core/tools";
-
-// Load environment variables
-dotenv.config();
 
 /**
  * Simple logger with environment-based log levels
  */
 class Logger {
-    private static logLevel = process.env.NODE_ENV === 'production' ? 'error' : 'debug';
+    private static logLevel: keyof typeof Logger.levels = process.env.NODE_ENV === 'production' ? 'error' : 'debug';
     private static levels = { debug: 0, info: 1, warn: 2, error: 3 };
 
     private static shouldLog(level: keyof typeof Logger.levels): boolean {
-        return Logger.levels[level] >= Logger.levels[Logger.logLevel as keyof typeof Logger.levels] || 0;
+        const levelMap = Logger.levels;
+        // Fallback to 'error' if logLevel is ever misconfigured at runtime
+        const currentLevel = (levelMap as Record<string, number>)[Logger.logLevel] ?? levelMap.error;
+        const requestedLevel = levelMap[level];
+        return requestedLevel >= currentLevel;
     }
 
     static debug(message: string, ...args: any[]) {
