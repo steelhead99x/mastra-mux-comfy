@@ -1,183 +1,323 @@
-# Mastra Mux MCP Multi-Model Workflow
+# Mux Video Assistant
 
-A comprehensive video processing solution built with Mastra framework, featuring interactive AI agents powered by multiple LLMs (Ollama & Anthropic Claude) that can manage Mux video assets through MCP (Model Context Protocol) integration.
+AI-powered video asset management using Mastra framework with Claude and Ollama models.
 
-## Features
+## What it does
 
-- 🤖 **Multi-Model AI Agents** - Support for both Ollama and Anthropic Claude
-- 🎥 **Mux Integration** - Full MCP integration for video asset management
-- 🧠 **Persistent Memory** - SQLite-based conversation history storage
-- 🛠️ **Dynamic Tool Loading** - Real-time MCP tool discovery and integration
-- 📊 **Dev UI** - Built-in Mastra development interface
-- 🔧 **Comprehensive Testing** - Test suites for all integrations
+Chat with AI agents to manage your Mux videos:
+- List and search video assets
+- Check processing status
+- Get upload reports
+- Monitor playback readiness
 
-## Prerequisites
+## Quick Start
 
-- Node.js 18+
-- [Anthropic API Key](https://console.anthropic.com/) for Claude integration
-- [Ollama](https://ollama.ai) installed and running locally (for embeddings)
-- Mux account with API credentials
-- Ollama model: `embeddinggemma:300m` (for embeddings)
-
-## Setup
-
-1. **Install dependencies**
-```shell script
+1. **Install**
+```bash
 npm install
 ```
 
 
-2. **Configure environment variables**
-   Create a `.env` file with:
+2. **Setup Environment**
+Create `.env` file:
 ```
-# Mux API credentials
-   MUX_TOKEN_ID=your_mux_token_id
-   MUX_TOKEN_SECRET=your_mux_token_secret
-   
-   # Ollama configuration (optional)
-   OLLAMA_BASE_URL=http://localhost:11434
-   OLLAMA_MODEL=gpt-oss:20b
+# Required: Mux credentials
+MUX_TOKEN_ID=your_token_id
+MUX_TOKEN_SECRET=your_token_secret
+
+# Required: Anthropic API key
+ANTHROPIC_API_KEY=your_anthropic_key
+
+# Optional: Ollama settings
+OLLAMA_BASE_URL=http://localhost:11434
 ```
 
 
-3. **Pull the Ollama model**
+3. **Install Ollama Models**
 ```shell script
+# Required for memory/embeddings
+ollama pull embeddinggemma:300m
+
+# Optional for local Ollama agent
 ollama pull gpt-oss:20b
 ```
 
 
 ## Usage
 
-### Development Mode
-
-Start the Mastra development server with the interactive agent:
-
+### Claude Agent (Recommended)
+Smart AI with advanced reasoning:
 ```shell script
-npm run dev
+npm run agent:anthropic
 ```
 
 
-This launches the Mastra dev UI at `http://localhost:4111` where you can:
-- Chat with the interactive agent
-- View agent configuration and tools
-- Monitor conversation memory
-- Access Mux MCP tools
-
-### Alternative Development Mode
-
-Run the agent directly in terminal mode:
-
+### Ollama Agent
+Local privacy-focused AI:
 ```shell script
 npm run dev:alt
 ```
 
 
-### Production
-
-Build and run the compiled version:
-
+### Web Interface
+Visual UI for both agents:
 ```shell script
-npm run build
-npm start
+npm run dev
+# Visit http://localhost:4111
 ```
 
 
-## Available Scripts
+## Example Conversations
 
-### Core Scripts
+**"List my video assets"**
+- Shows recent uploads with status
 
-- **`npm run dev`** - Start Mastra development server with full UI
-- **`npm run dev:alt`** - Run interactive agent directly in terminal
-- **`npm run build`** - Compile TypeScript to JavaScript
-- **`npm start`** - Run compiled production version
+**"Find failed uploads"**
+- Filters by processing errors
 
-### Test Scripts
+**"Status of asset abc123"**
+- Detailed asset information
 
-- **`npm run test:auth`** - Test Mux API authentication
-- **`npm run test:list`** - Test Mux asset listing functionality
-- **`npm run test:vnext`** - Demo Ollama text generation (streaming/non-streaming)
-- **`npm run test:comfyClient`** - Test ComfyUI client integration
-- **`npm run agent:list`** - Run legacy asset listing agent
+**"Videos ready for streaming"**
+- Assets with playback URLs
 
-## Interactive Agent Capabilities
+## Commands
 
-The interactive agent (`interactive`) features:
+| Script | Purpose |
+|--------|---------|
+| `npm run agent:anthropic` | Claude agent (best) |
+| `npm run dev:alt` | Ollama agent (local) |
+| `npm run dev` | Web UI (both agents) |
+| `npm run test:anthropic` | Test Claude setup |
+| `npm run build` | Compile project |
 
-- **🧠 Memory** - Remembers conversation history across sessions
-- **🎥 Mux Tools** - Access to Mux MCP tools for video asset management
-- **🤖 Ollama Model** - Powered by `gpt-oss:20b` via AI SDK
-- **📊 Asset Management** - List, search, and manage Mux video assets
-- **📈 Status Monitoring** - Check asset processing status and reports
+## Troubleshooting
 
-### Example Interactions
+**Claude not working?**
+- Check `ANTHROPIC_API_KEY` in `.env`
 
-Ask the agent questions like:
-- "List my recent video assets"
-- "Show me assets that are ready for playback"
-- "What's the status of asset [ID]?"
-- "Search for assets containing 'demo' in the title"
+**No Mux tools loaded?**
+- Verify `MUX_TOKEN_ID` and `MUX_TOKEN_SECRET`
+
+**Ollama issues?**
+- Run `ollama serve`
+- Install: `ollama pull embeddinggemma:300m`
+
+**Memory errors?**
+- Delete `.db` files to reset chat history
+
+## Features
+
+- 🤖 **Dual AI Models** - Choose Claude or Ollama
+- 🎥 **Mux Integration** - Full video platform access
+- 🧠 **Chat Memory** - Remembers conversations
+- 🌐 **Web + Terminal** - Multiple interfaces
+- 🔧 **Live Tools** - Dynamic Mux API access
+
+Built with [Mastra](https://mastra.ai) framework and [Mux](https://mux.com) video platform.
 
 ## Architecture
 
 ### Core Components
 
-- **`src/mastra/index.ts`** - Main Mastra instance and agent bootstrap
-- **`src/mastra/agents/interactive-agent.ts`** - Interactive AI agent with memory
-- **`src/mastra/mcp/mux-client.ts`** - Mux MCP client for tool integration
-- **`src/mastra/models/ollama-vnext.ts`** - Ollama AI SDK integration
+- `src/mastra/index.ts` - Main application entry point
+- `src/mastra/agents/` - AI agent configurations
+    - `interactive-agent.ts` - Ollama-powered agent
+    - `anthropic-dynamic-agent.ts` - Claude-powered agent
+- `src/mastra/models/` - AI model integrations
+    - `ollama-vnext.ts` - Ollama model setup
+    - `anthropic-model.ts` - Anthropic Claude setup
+- `src/mastra/mcp/mux-client.ts` - Mux API integration via MCP
 
-### Configuration
+### Environment Variables
 
-- **`mastra.config.js`** - Project-level Mastra configuration
-- **`package.json`** - Dependencies and scripts
-- **`.env`** - Environment variables (create from template above)
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MUX_TOKEN_ID` | Yes | Mux API token ID |
+| `MUX_TOKEN_SECRET` | Yes | Mux API token secret |
+| `ANTHROPIC_API_KEY` | Yes* | Anthropic Claude API key |
+| `OLLAMA_BASE_URL` | No | Ollama server URL (default: localhost:11434) |
+| `ANTHROPIC_MODEL` | No | Claude model version (default: claude-3-5-sonnet-20241022) |
+| `OLLAMA_MODEL` | No | Ollama model name (default: gpt-oss:20b) |
 
-## Memory System
+*Required for Claude agent functionality
 
-The agent uses persistent memory storage via SQLite:
+### Memory System
 
-- **Storage**: `./agent-memory.db` (auto-created)
-- **Features**: Conversation history, context recall, semantic search
-- **Provider**: LibSQL for local development
+Both agents use persistent SQLite storage:
+- `agent-memory.db` - Ollama agent conversations
+- `anthropic-agent-memory.db` - Claude agent conversations
 
-## MCP Integration
+Memory features:
+- Conversation history retention
+- Semantic search across past interactions
+- Context-aware responses
+- Thread-based organization
 
-Mux tools are dynamically loaded via MCP:
+### MCP Integration
 
-- **Transport**: Stdio transport to `@mux/mcp` server
-- **Tools**: Asset listing, status checks, playback management
-- **Auth**: Token-based authentication via environment variables
+Model Context Protocol (MCP) enables dynamic tool loading:
+- Automatic Mux API tool discovery
+- Real-time schema conversion
+- Error handling and fallbacks
+- Tool execution logging
 
-## Development Tips
+Available Mux tools (loaded automatically):
+- List video assets
+- Get asset details
+- Check processing status
+- Retrieve playback URLs
+- Monitor upload progress
+- Access error reports
 
-1. **Monitor Logs** - The agent provides detailed logging for MCP connections and tool loading
-2. **Test Scripts** - Use individual test scripts to verify components before running the full agent
-3. **Memory Reset** - Delete `agent-memory.db` to clear conversation history
-4. **Model Changes** - Modify `OLLAMA_MODEL` in `.env` to use different Ollama models
+## Development
 
-## Troubleshooting
-
-### Common Issues
-
-- **MCP Connection Failed** - Verify Mux credentials in `.env`
-- **Ollama Model Missing** - Run `ollama pull gpt-oss:20b`
-- **Port Conflicts** - Mastra dev server uses port 4111 by default
-- **Memory Issues** - Check SQLite file permissions for `agent-memory.db`
-
-### Debug Commands
-
-```shell script
-# Test Mux authentication
-npm run test:auth
-
-# Test Ollama connectivity  
-npm run test:vnext
-
-# Verify MCP tool loading
-npm run test:listdire
+### Project Structure
+```
+src/mastra/
+├── index.ts              # Main entry point
+├── agents/               # AI agent definitions
+├── models/               # Model configurations
+├── mcp/                  # MCP client integration
+├── scripts/              # Test and utility scripts
+└── types/                # TypeScript type definitions
 ```
 
 
+### Testing
+
+Test individual components:
+```shell script
+# Test Anthropic integration
+npm run test:anthropic
+
+# Test Mux authentication
+npm run test:auth
+
+# Test asset listing
+npm run test:list
+
+# Test Ollama connectivity
+npm run test:vnext
+```
+
+
+### Adding New Models
+
+1. Create model configuration in `src/mastra/models/`
+2. Add agent definition in `src/mastra/agents/`
+3. Register agent in `src/mastra/index.ts`
+4. Add npm script for easy access
+
+### Extending Functionality
+
+- **New Tools**: Extend MCP client for additional APIs
+- **Custom Memory**: Add processors in agent configurations
+- **UI Components**: Enhance web interface in Mastra dev UI
+- **Workflows**: Create automated video processing pipelines
+
+## API Reference
+
+### Agent Methods
+
+```typescript
+// Generate response with tools and memory
+const response = await agent.generate(
+  [{ role: "user", content: "List my videos" }],
+  { temperature: 0.1 }
+);
+
+// Access conversation history
+const memory = agent.memory;
+
+// Get available tools
+const tools = await agent.tools();
+```
+
+
+### MCP Client Methods
+
+```typescript
+// Get all available tools
+const tools = await muxMcpClient.getTools();
+
+// Check connection status
+const connected = muxMcpClient.isConnected();
+
+// Reset connection
+await muxMcpClient.reset();
+
+// Clean disconnect
+await muxMcpClient.disconnect();
+```
+
+
+### Model Functions
+
+```typescript
+// Direct Anthropic usage
+const result = await anthropicGenerateText(prompt, {
+  temperature: 0.1,
+  maxTokens: 4096,
+  tools: availableTools
+});
+
+// Direct Ollama usage
+const response = await ollamaGenerateText(prompt, {
+  temperature: 0.1,
+  tools: availableTools
+});
+```
+
+
+## Performance Tips
+
+1. **Memory Management**
+    - Adjust `topK` and `messageRange` in agent configs
+    - Clear database files to reset memory
+
+2. **Tool Optimization**
+    - Tools are cached after first load
+    - Use batch operations when possible
+
+3. **Model Selection**
+    - Claude: Best reasoning, requires API key
+    - Ollama: Local privacy, needs more resources
+
+## Security
+
+- API keys stored in `.env` (never commit)
+- Local SQLite databases for memory
+- MCP runs as isolated subprocess
+- All connections use environment variables
+
+## License
+
+MIT License - See LICENSE file for details.
+
+## Support
+
+- [Mastra Documentation](https://mastra.ai/docs)
+- [Mux API Documentation](https://docs.mux.com)
+- [Anthropic Claude](https://console.anthropic.com)
+- [Ollama](https://ollama.ai)
+
 ## Contributing
 
-This project demonstrates Mastra's capabilities with real-world video processing workflows. Feel free to extend the agent with additional tools, memory processors, or integrations.
+1. Fork the repository
+2. Create feature branch
+3. Add tests for new functionality
+4. Submit pull request
+
+Areas for contribution:
+- Additional AI model integrations
+- Enhanced Mux tool coverage
+- UI/UX improvements
+- Performance optimizations
+- Documentation updates
+
+---
+
+Built with ❤️ using Mastra framework for AI agent orchestration and Mux for video infrastructure.
+
+
