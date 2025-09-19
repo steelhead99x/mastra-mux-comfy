@@ -12,6 +12,7 @@
     "test:assets": "tsx src/mastra/scripts/test-list-assets.ts",
     "test:assets:all": "tsx src/mastra/scripts/test-list-assets.ts all",
     "test:vnext": "tsx src/mastra/scripts/ollama-vnext-demo.ts",
+    "test:lmstudio": "tsx src/mastra/scripts/test-lmstudio.ts",
     "test:comfyClient": "tsx src/mastra/scripts/comfy-test.ts",
     "agent:anthropic": "tsx src/mastra/agents/anthropic-dynamic-agent.ts",
     "agent:ollama-interactive-data": "tsx src/mastra/agents/interactive-agent-errors.ts",
