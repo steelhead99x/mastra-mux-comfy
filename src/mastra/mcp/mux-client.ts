@@ -31,6 +31,7 @@ class MuxMCPClient {
             throw new Error("Missing required environment variables: MUX_TOKEN_ID and MUX_TOKEN_SECRET");
         }
 
+
         this.connecting = true;
 
         try {
