@@ -6,12 +6,14 @@ async function run() {
     const prompt = "Explain what Mux is in 2 sentences.";
 
     console.log("=== vNext Non-Streaming ===");
-    const text = await ollamaGenerateText(prompt, { temperature: 0.2 });
-    console.log(text);
+    const result = await ollamaGenerateText(prompt, { temperature: 0.2 });
+    console.log(result.text);
 
     console.log("\n=== vNext Streaming ===");
-    const stream = await ollamaStreamText("List three video streaming concepts:");
-    for await (const chunk of stream) {
+    const streamResult = await ollamaStreamText("List three video streaming concepts:");
+    
+    // Fix: Access the textStream property from the result
+    for await (const chunk of streamResult.textStream) {
         process.stdout.write(chunk);
     }
     process.stdout.write("\n\n✅ Done\n");

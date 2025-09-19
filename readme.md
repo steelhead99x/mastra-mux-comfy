@@ -172,7 +172,7 @@ npm run test:auth
 npm run test:vnext
 
 # Verify MCP tool loading
-npm run test:list
+npm run test:listdire
 ```
 
 

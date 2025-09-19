@@ -26,20 +26,21 @@ class MuxMCPClient {
             return;
         }
 
+        // Validate environment before attempting connection to avoid locally caught throw
+        if (!process.env.MUX_TOKEN_ID || !process.env.MUX_TOKEN_SECRET) {
+            throw new Error("Missing required environment variables: MUX_TOKEN_ID and MUX_TOKEN_SECRET");
+        }
+
         this.connecting = true;
 
         try {
-            if (!process.env.MUX_TOKEN_ID || !process.env.MUX_TOKEN_SECRET) {
-                throw new Error("Missing required environment variables: MUX_TOKEN_ID and MUX_TOKEN_SECRET");
-            }
-
             console.log("🔗 Connecting to Mux MCP server...");
             console.log(`   MUX_TOKEN_ID: ${process.env.MUX_TOKEN_ID.substring(0, 8)}***`);
             console.log(`   MUX_TOKEN_SECRET: ${process.env.MUX_TOKEN_SECRET.substring(0, 8)}***`);
 
             this.transport = new StdioClientTransport({
                 command: "npx",
-                args: ["@mux/mcp","--tools=dynamic"],
+                args: ["@mux/mcp", "client=openai-agents", "--tools=dynamic"],
                 env: {
                     ...process.env,
                     MUX_TOKEN_ID: process.env.MUX_TOKEN_ID,
@@ -86,7 +87,7 @@ class MuxMCPClient {
                 for (const tool of result.tools) {
                     try {
                         // Create a proper Mastra tool using createTool
-                        const mastraTool = createTool({
+                        tools[tool.name] = createTool({
                             id: tool.name,
                             description: tool.description || `Mux MCP tool: ${tool.name}`,
                             inputSchema: this.convertToZodSchema(tool.inputSchema),
@@ -105,11 +106,8 @@ class MuxMCPClient {
                                 return result.content;
                             },
                         });
-
-                        tools[tool.name] = mastraTool;
                     } catch (toolError) {
                         console.warn(`Skipping tool ${tool.name} due to error:`, toolError);
-                        continue;
                     }
                 }
             }

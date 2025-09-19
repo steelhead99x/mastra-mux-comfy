@@ -2,9 +2,10 @@
 import { Agent } from "@mastra/core";
 import { Memory } from "@mastra/memory";
 import { LibSQLStore, LibSQLVector } from "@mastra/libsql";
-import { ollamaModel } from "../models/ollama-vnext";
+import { ollamaModel, ollamaGenerateText, ollamaChat } from "../models/ollama-vnext";
 import { muxMcpClient } from "../mcp/mux-client";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import readline from "readline";
 
 console.log("Creating interactive agent...");
 
@@ -62,7 +63,8 @@ export const interactiveAgent = new Agent({
 console.log("Interactive agent created successfully:", interactiveAgent.name);
 
 /**
- * Interactive agent runner function for the terminal interface
+ * Enhanced interactive agent runner with proper tool integration
+ * This function demonstrates both Mastra Agent usage and direct ollama-vnext usage
  */
 export async function runInteractiveAgent(): Promise<void> {
   console.log("🤖 Starting interactive agent session...");
@@ -73,21 +75,174 @@ export async function runInteractiveAgent(): Promise<void> {
     const tools = await muxMcpClient.getTools();
     console.log(`✅ Loaded ${Object.keys(tools).length} tools: ${Object.keys(tools).join(', ')}`);
     
-    // You can add interactive terminal logic here
-    // For now, we'll just log that the agent is ready
     console.log("🚀 Interactive agent is ready! Agent name:", interactiveAgent.name);
     console.log("💡 Agent instructions:", interactiveAgent.instructions);
     
-    // Keep the process alive for the interactive session
-    console.log("📝 Agent session running. Press Ctrl+C to exit.");
-    
-    // Simple keep-alive loop
+    // Create readline interface for terminal interaction
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    console.log("\n📝 Interactive agent session started. Type 'exit' to quit, 'direct' for direct ollama-vnext mode, or chat normally.");
+    console.log("🎯 In direct mode, you can test tool calling with enhanced ollama-vnext functions.\n");
+
+    let directMode = false;
+
+    const askQuestion = (): Promise<string> => {
+      return new Promise((resolve) => {
+        const prompt = directMode ? "🔧 Direct> " : "🤖 Agent> ";
+        rl.question(prompt, resolve);
+      });
+    };
+
     while (true) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      try {
+        const userInput = await askQuestion();
+        
+        if (userInput.toLowerCase().trim() === 'exit') {
+          console.log("👋 Goodbye!");
+          break;
+        }
+        
+        if (userInput.toLowerCase().trim() === 'direct') {
+          directMode = !directMode;
+          console.log(`${directMode ? '🔧 Switched to direct ollama-vnext mode' : '🤖 Switched back to Mastra Agent mode'}`);
+          continue;
+        }
+
+        if (!userInput.trim()) continue;
+
+        if (directMode) {
+          // Direct ollama-vnext mode with tools
+          console.log("🔧 Processing with direct ollama-vnext...");
+          
+          // Convert Mastra tools to AI SDK format for direct usage
+          const aiSdkTools: Record<string, any> = {};
+          
+          for (const [toolName, mastraTool] of Object.entries(tools)) {
+            if (mastraTool && typeof mastraTool.execute === 'function') {
+              // Convert Mastra tool to AI SDK tool format
+              aiSdkTools[toolName] = {
+                description: mastraTool.description || `Tool: ${toolName}`,
+                parameters: mastraTool.inputSchema || {},
+                execute: mastraTool.execute
+              };
+            }
+          }
+
+          const result = await ollamaGenerateText(userInput, {
+            temperature: 0.1,
+            tools: Object.keys(aiSdkTools).length > 0 ? aiSdkTools : undefined,
+            toolChoice: Object.keys(aiSdkTools).length > 0 ? "auto" : "none",
+            maxSteps: 3
+          });
+
+          console.log("📝 Response:", result.text);
+          
+          if (result.toolCalls && result.toolCalls.length > 0) {
+            console.log("🛠️  Tool calls made:", result.toolCalls.length);
+            result.toolCalls.forEach((call, index) => {
+              console.log(`   ${index + 1}. ${call.toolName}:`, call.args);
+            });
+          }
+          
+          if (result.toolResults && result.toolResults.length > 0) {
+            console.log("📊 Tool results:");
+            result.toolResults.forEach((result, index) => {
+              console.log(`   ${index + 1}.`, result);
+            });
+          }
+          
+        } else {
+          // Regular Mastra Agent mode (preserves all existing functionality)
+          console.log("🤖 Processing with Mastra Agent...");
+          
+          const response = await interactiveAgent.generate(
+            [{ role: "user", content: userInput }],
+            {
+              temperature: 0.1,
+            }
+          );
+
+          console.log("📝 Response:", response.text);
+          
+          // Log any tool usage if available
+          if (response.toolCalls && response.toolCalls.length > 0) {
+            console.log("🛠️  Tools used:", response.toolCalls.map(call => call.toolName).join(', '));
+          }
+        }
+
+      } catch (error) {
+        console.error("❌ Error processing message:", error);
+      }
     }
+
+    rl.close();
     
   } catch (error) {
     console.error("❌ Failed to start interactive agent:", error);
+    throw error;
+  }
+}
+
+/**
+ * Utility function to demonstrate tool conversion between Mastra and AI SDK formats
+ * This helps when you want to use Mastra tools with direct ollama-vnext calls
+ */
+export async function convertMastraToolsForOllama() {
+  try {
+    const mastraTools = await muxMcpClient.getTools();
+    const aiSdkTools: Record<string, any> = {};
+    
+    for (const [toolName, mastraTool] of Object.entries(mastraTools)) {
+      if (mastraTool && typeof mastraTool.execute === 'function') {
+        aiSdkTools[toolName] = {
+          description: mastraTool.description || `Tool: ${toolName}`,
+          parameters: mastraTool.inputSchema || {},
+          execute: async (args: any) => {
+            // Wrap Mastra tool execution for AI SDK compatibility
+            return await mastraTool.execute({ context: args });
+          }
+        };
+      }
+    }
+    
+    return aiSdkTools;
+  } catch (error) {
+    console.error("Failed to convert Mastra tools:", error);
+    return {};
+  }
+}
+
+/**
+ * Example function showing how to use ollama-vnext directly with Mux tools
+ * This demonstrates the enhanced tool support while keeping Mastra compatibility
+ */
+export async function testDirectOllamaWithTools(prompt: string) {
+  console.log("🧪 Testing direct ollama-vnext with Mux tools...");
+  
+  try {
+    const tools = await convertMastraToolsForOllama();
+    
+    const result = await ollamaChat([
+      { role: "user", content: prompt }
+    ], {
+      temperature: 0.1,
+      tools: Object.keys(tools).length > 0 ? tools : undefined,
+      toolChoice: "auto",
+      maxSteps: 3
+    });
+
+    return {
+      response: result.text,
+      toolCalls: result.toolCalls,
+      toolResults: result.toolResults,
+      usage: result.usage
+    };
+    
+  } catch (error) {
+    console.error("❌ Direct ollama test failed:", error);
     throw error;
   }
 }

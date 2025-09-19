@@ -16,13 +16,13 @@
     "agent:list": "tsx src/mastra/agents/agent-list-assets-legacyprovider.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "1.0.18",
+    "@ai-sdk/openai-compatible": "latest",
     "@mastra/core": "latest",
-    "@mastra/libsql": "^0.14.2",
+    "@mastra/libsql": "latest",
     "@mastra/loggers": "latest",
     "@mastra/mcp": "latest",
-    "@mastra/memory": "^0.15.2",
-    "ai": "5.0.46",
+    "@mastra/memory": "latest",
+    "ai": "latest",
     "dotenv": "latest",
     "mastra": "latest",
     "ollama": "latest",
@@ -34,7 +34,7 @@
     "typescript": "latest"
   },
   "engines": {
-    "node": "latest"
+    "node": ">24.0.0"
   },
   "keywords": [
     "mastra",
