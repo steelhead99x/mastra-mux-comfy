@@ -147,14 +147,14 @@ export async function runInteractiveAgent(): Promise<void> {
 
           console.log("📝 Response:", result.text);
           
-          if (result.toolCalls && result.toolCalls.length > 0) {
+          if (Array.isArray(result.toolCalls) && result.toolCalls.length > 0) {
             console.log("🛠️  Tool calls made:", result.toolCalls.length);
             result.toolCalls.forEach((call, index) => {
               console.log(`   ${index + 1}. ${call.toolName}:`, call.args);
             });
           }
           
-          if (result.toolResults && result.toolResults.length > 0) {
+          if (Array.isArray(result.toolResults) && result.toolResults.length > 0) {
             console.log("📊 Tool results:");
             result.toolResults.forEach((result, index) => {
               console.log(`   ${index + 1}.`, result);
@@ -177,7 +177,7 @@ export async function runInteractiveAgent(): Promise<void> {
             console.log("📝 Response:", response.text);
 
             // Log any tool usage if available
-            if (response.toolCalls && response.toolCalls.length > 0) {
+            if (Array.isArray(response.toolCalls) && response.toolCalls.length > 0) {
                 console.log("🛠️  Tools used:", response.toolCalls.map(call => call.toolName).join(', '));
             }
         }

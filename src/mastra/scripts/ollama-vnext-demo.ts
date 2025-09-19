@@ -6,8 +6,7 @@ async function run() {
     const prompt = "Explain what Mux is in 2 sentences.";
 
     console.log("=== vNext Non-Streaming ===");
-    const result = await ollamaGenerateText(prompt, { temperature: 0.2 });
-    console.log(result.text);
+    console.log((await ollamaGenerateText(prompt, { temperature: 0.2 })).text);
 
     console.log("\n=== vNext Streaming ===");
     const streamResult = await ollamaStreamText("List three video streaming concepts:");

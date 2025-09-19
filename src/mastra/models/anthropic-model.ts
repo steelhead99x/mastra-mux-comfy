@@ -1,7 +1,6 @@
 
 import { anthropic } from "@ai-sdk/anthropic";
-import { generateText, streamText, generateObject } from "ai";
-import { z } from "zod";
+import { generateText, streamText } from "ai";
 import dotenv from "dotenv";
 
 // Load environment variables
@@ -40,37 +39,26 @@ export async function anthropicGenerateText(
         system
     } = options;
 
-    try {
-        console.log(`🤖 Generating text with Anthropic (${DEFAULT_MODEL})...`);
+    console.log(`🤖 Generating text with Anthropic (${DEFAULT_MODEL})...`);
 
-        // Build the parameters object, only including supported parameters
-        const params: any = {
-            model: anthropicModel,
-            prompt,
-            temperature,
-            tools,
-            toolChoice,
-            maxSteps,
-            system,
-        };
+    // Build the parameters object, only including supported parameters
+    const params: any = {
+        model: anthropicModel,
+        prompt,
+        temperature,
+        tools,
+        toolChoice,
+        maxSteps,
+        system,
+    };
 
-        // Add maxTokens if it's a supported parameter name, otherwise skip it
-        if (maxTokens) {
-            params.maxTokens = maxTokens;
-        }
-
-        const result = await generateText(params);
-
-        return result;
-    } catch (error) {
-        console.error("❌ Anthropic generateText error:", error);
-        throw error;
+    // Add maxTokens if it's a supported parameter name, otherwise skip it
+    if (maxTokens) {
+        params.maxTokens = maxTokens;
     }
-}
 
-/**
- * Stream text generation with Anthropic Claude
- */
+    return await generateText(params);
+}
 export async function anthropicStreamText(
     prompt: string,
     options: {
@@ -93,101 +81,49 @@ export async function anthropicStreamText(
         onChunk
     } = options;
 
-    try {
-        console.log(`🤖 Streaming text with Anthropic (${DEFAULT_MODEL})...`);
+    console.log(`🤖 Streaming text with Anthropic (${DEFAULT_MODEL})...`);
 
-        const params: any = {
-            model: anthropicModel,
-            prompt,
-            temperature,
-            tools,
-            toolChoice,
-            maxSteps,
-            system,
-        };
+    const params: any = {
+        model: anthropicModel,
+        prompt,
+        temperature,
+        tools,
+        toolChoice,
+        maxSteps,
+        system,
+    };
 
-        if (maxTokens) {
-            params.maxTokens = maxTokens;
-        }
-
-        const result = streamText(params);
-
-        if (onChunk) {
-            for await (const chunk of result.textStream) {
-                onChunk(chunk);
-            }
-        }
-
-        return result;
-    } catch (error) {
-        console.error("❌ Anthropic streamText error:", error);
-        throw error;
+    if (maxTokens) {
+        params.maxTokens = maxTokens;
     }
-}
 
-/**
- * Generate structured object with Anthropic Claude
- */
-export async function anthropicGenerateObject<T = any>(
-    prompt: string,
-    schema: z.ZodSchema<T>,
-    options: {
-        temperature?: number;
-        maxTokens?: number;
-        system?: string;
-    } = {}
-) {
-    const {
-        temperature = 0.1,
-        maxTokens = 4096,
-        system
-    } = options;
+    const result = streamText(params);
 
-    try {
-        console.log(`🤖 Generating object with Anthropic (${DEFAULT_MODEL})...`);
-
-        const params: any = {
-            model: anthropicModel,
-            prompt,
-            schema,
-            temperature,
-            system,
-        };
-
-        if (maxTokens) {
-            params.maxTokens = maxTokens;
+    if (onChunk) {
+        for await (const chunk of result.textStream) {
+            onChunk(chunk);
         }
-
-        const result = await generateObject(params);
-
-        return result;
-    } catch (error) {
-        console.error("❌ Anthropic generateObject error:", error);
-        throw error;
     }
+
+    return result;
 }
 
 /**
  * Test Anthropic connection and basic functionality
  */
 export async function testAnthropicConnection(): Promise<boolean> {
-    try {
-        console.log("🔍 Testing Anthropic connection...");
+    console.log("🔍 Testing Anthropic connection...");
 
-        const result = await anthropicGenerateText("Hello! Please respond with 'Connection successful'", {
-            temperature: 0,
-            maxTokens: 50,
-        });
+    const result = await anthropicGenerateText("Hello! Please respond with 'Connection successful'", {
+        temperature: 0,
+        maxTokens: 50,
+    });
 
-        if (result.text.toLowerCase().includes("successful")) {
-            console.log("✅ Anthropic connection test passed");
-            return true;
-        } else {
-            console.log("⚠️ Anthropic responded but with unexpected content:", result.text);
-            return false;
-        }
-    } catch (error) {
-        console.error("❌ Anthropic connection test failed:", error);
+    if (result.text.toLowerCase().includes("successful")) {
+        console.log("✅ Anthropic connection test passed");
+        return true;
+    } else {
+        console.log("⚠️ Anthropic responded but with unexpected content:", result.text);
         return false;
     }
 }
@@ -196,6 +132,5 @@ export default {
     anthropicModel,
     anthropicGenerateText,
     anthropicStreamText,
-    anthropicGenerateObject,
     testAnthropicConnection,
 };

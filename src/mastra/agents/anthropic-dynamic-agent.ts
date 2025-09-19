@@ -96,12 +96,17 @@ console.log("✅ Anthropic dynamic agent created successfully:", anthropicDynami
 export async function runAnthropicDynamicAgent(): Promise<void> {
     console.log("🚀 Starting Anthropic dynamic agent session...");
 
-    try {
-        // Validate environment
-        if (!process.env.ANTHROPIC_API_KEY) {
-            throw new Error("ANTHROPIC_API_KEY environment variable is required");
-        }
+    // Validate environment
+    if (!process.env.ANTHROPIC_API_KEY) {
+        console.error("❌ ANTHROPIC_API_KEY environment variable is required");
+        console.log("\n💡 Troubleshooting tips:");
+        console.log("   • Check ANTHROPIC_API_KEY environment variable");
+        console.log("   • Verify Mux credentials (MUX_TOKEN_ID, MUX_TOKEN_SECRET)");
+        console.log("   • Ensure Ollama is running for embeddings");
+        return;
+    }
 
+    try {
         // Initialize MCP client and load tools
         console.log("🔧 Initializing Mux MCP connection...");
         const tools = await muxMcpClient.getTools();
@@ -227,7 +232,7 @@ export async function runAnthropicDynamicAgent(): Promise<void> {
                     console.log(response.text);
 
                     // Show tool usage if any
-                    if (response.toolCalls && response.toolCalls.length > 0) {
+                    if (Array.isArray(response.toolCalls) && response.toolCalls.length > 0) {
                         console.log(`\n🛠️ Tools Used (${response.toolCalls.length}):`);
                         response.toolCalls.forEach((call, index) => {
                             console.log(`   ${index + 1}. ${call.toolName}`);
@@ -255,7 +260,6 @@ export async function runAnthropicDynamicAgent(): Promise<void> {
         console.log("   • Check ANTHROPIC_API_KEY environment variable");
         console.log("   • Verify Mux credentials (MUX_TOKEN_ID, MUX_TOKEN_SECRET)");
         console.log("   • Ensure Ollama is running for embeddings");
-        throw error;
     }
 }
 
