@@ -54,8 +54,8 @@ async function simpleListAssetsTest() {
             // 4) Look for list_video_assets endpoint
             let foundListAssets = false;
             if (endpointsResult?.tools && Array.isArray(endpointsResult.tools)) {
-                const endpoints = endpointsResult.tools;
-                const listAssetsEndpoint = endpoints.find(ep =>
+                const endpoints = endpointsResult.tools as Array<{ name?: string }>;
+                const listAssetsEndpoint = endpoints.find((ep) =>
                     ep.name === "list_video_assets" ||
                     (ep.name && ep.name.includes("list") && ep.name.includes("asset"))
                 );

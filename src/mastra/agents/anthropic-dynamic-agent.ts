@@ -221,11 +221,7 @@ export async function runAnthropicDynamicAgent(): Promise<void> {
                     console.log("🎬 Using Anthropic Agent with tools and memory...");
 
                     const response = await anthropicDynamicAgent.generateVNext(
-                        [{ role: "user", content: userInput }],
-                        {
-                            temperature: 0.1,
-                            maxTokens: 4096,
-                        }
+                        [{ role: "user", content: userInput }]
                     );
 
                     console.log("\n📝 Agent Response:");
