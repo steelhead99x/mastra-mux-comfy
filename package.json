@@ -14,7 +14,10 @@
     "test:vnext": "tsx src/mastra/scripts/ollama-vnext-demo.ts",
     "test:comfyClient": "tsx src/mastra/scripts/comfy-test.ts",
     "agent:anthropic": "tsx src/mastra/agents/anthropic-dynamic-agent.ts",
-    "test:anthropic": "tsx src/mastra/scripts/test-anthropic-agent.ts"
+    "agent:ollama-interactive-data": "tsx src/mastra/agents/interactive-agent-errors.ts",
+    "agent:ollama-interactive-analytics": "tsx src/mastra/agents/interactive-agent-analytics.ts",
+    "agent:ollama-interactive": "tsx src/mastra/agents/interactive-agent-analytics.ts",
+    "test:anthropic": "tsx src/mastra/scripts/interactive-agent-anthropic.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.17",
