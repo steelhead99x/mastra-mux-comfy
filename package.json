@@ -18,8 +18,10 @@
     "agent:ollama-interactive-data": "tsx src/mastra/agents/interactive-agent-errors.ts",
     "agent:ollama-interactive-analytics": "tsx src/mastra/agents/interactive-agent-analytics.ts",
     "agent:ollama-interactive": "tsx src/mastra/agents/interactive-agent-analytics.ts",
-    "test:anthropic": "tsx src/mastra/scripts/interactive-agent-anthropic.ts"
-  },
+    "test:anthropic": "tsx src/mastra/scripts/interactive-agent-anthropic.ts",
+    "agent:lmstudio": "tsx src/mastra/agents/lmstudio-mcp-agent.ts"
+  }
+,
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.17",
     "@ai-sdk/openai-compatible": "latest",
